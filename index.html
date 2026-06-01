@@ -88,8 +88,9 @@
         let currentTab = 'sosanh';
         let activeTag = 'all';
         let searchKeyword = '';
+        let filterLevel50 = 'all'; // 'all': Tất cả hụt chỉ tiêu, 'under50': Chỉ tài xế dưới 50% chỉ tiêu
 
-        // Xử lý nạp dữ liệu thông minh - Cộng dồn nếu trùng Mã Tài Xế
+        // Xử lý nạp dữ liệu
         document.getElementById('excelFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -150,7 +151,6 @@
             document.getElementById('cnt-rto').innerText = originalData.filter(i => i.type === 'rto').length;
             document.getElementById('cnt-txz').innerText = originalData.filter(i => i.type === 'txz').length;
             
-            // Cập nhật số lượng tài xế không đạt chỉ tiêu doanh số lên nhãn Tab
             const fromDate = document.getElementById('dateFrom').value;
             const toDate = document.getElementById('dateTo').value;
             let failCount = 0;
@@ -172,22 +172,21 @@
             let isVf8Vip = model.includes('VIP') || model.includes('GF');
             let isPremium = model.includes('VF8') || model.includes('VF7') || model.includes('PREMIUM');
 
-            // Cấu hình định mức mặc định theo ngày thường (T2-T5) và ngày cuối tuần (T6-CN)
-            let weekdayRate = 1000000; // Mặc định Green Car ngày thường 1.000k
-            let weekendRate = 1800000; // Mặc định Green Car cuối tuần 1.800k
+            let weekdayRate = 1000000; // Định mức trọng điểm: Ngày thường 1.000k [cite: 138]
+            let weekendRate = 1800000; // Định mức trọng điểm: Cuối tuần 1.800k [cite: 138]
 
             if (isVf8Vip) {
-                weekdayRate = 600000;   // GF-VIP ngày thường 600k
-                weekendRate = 700000;   // GF-VIP cuối tuần 700k
+                weekdayRate = 600000;   // GF-VIP ngày thường 600k [cite: 145]
+                weekendRate = 700000;   // GF-VIP cuối tuần 700k [cite: 145]
             } else if (isPremium) {
-                weekdayRate = 1000000;  // Green Premium ngày thường 1.000k
-                weekendRate = 1600000;  // Green Premium cuối tuần 1.600k
+                weekdayRate = 1000000;  // Green Premium ngày thường 1.000k [cite: 138]
+                weekendRate = 1600000;  // Green Premium cuối tuần 1.600k [cite: 138]
             }
 
             let curr = new Date(start);
             let safetyLoop = 0;
             while (curr <= end && safetyLoop < 366) {
-                let day = curr.getDay(); // 0: Chủ nhật, 1-4: Thứ 2 đến Thứ 5, 5: Thứ 6, 6: Thứ 7
+                let day = curr.getDay(); 
                 if (day >= 1 && day <= 4) {
                     totalTarget += weekdayRate;
                 } else {
@@ -257,6 +256,12 @@
             renderAll();
         }
 
+        // Hàm thay đổi chế độ lọc nâng cao trong Tab Cảnh báo chỉ tiêu
+        function changeCanhBaoFilter(level) {
+            filterLevel50 = level;
+            renderAll();
+        }
+
         function getFilteredData() {
             return originalData.filter(item => {
                 const matchTag = (activeTag === 'all' || item.type === activeTag);
@@ -273,28 +278,50 @@
             const fromDate = document.getElementById('dateFrom').value;
             const toDate = document.getElementById('dateTo').value;
 
-            // 🔥 THÊM MỚI: TAB BỘ LỌC CẢNH BÁO TÀI XẾ KHÔNG ĐẠT DOANH SỐ TỐI THIỂU
+            // 🔥 XỬ LÝ KHU VỰC CẢNH BÁO DOANH SỐ (ĐÃ THÊM LỌC 50%)
             if (currentTab === 'canhbao') {
-                // Lọc những tài xế có doanh thu thực tế NHỎ HƠN doanh thu quy định định mức
-                const nonCompliantDrivers = data.map(d => {
+                // Tạo danh sách tất cả tài xế không đạt chỉ tiêu (doanh số thực tế < quy định)
+                let nonCompliantDrivers = data.map(d => {
                     let required = calculateTargetRevenue(d, fromDate, toDate);
-                    return { ...d, targetRevenue: required, deficit: required - d.dt };
+                    let rate = required > 0 ? (d.dt / required) * 100 : 100;
+                    return { ...d, targetRevenue: required, deficit: required - d.dt, percentAchieved: rate };
                 }).filter(d => d.deficit > 0);
+
+                // Đếm tổng số tài xế vi phạm nghiêm trọng (đạt dưới 50% chỉ tiêu)
+                const countUnder50 = nonCompliantDrivers.filter(d => d.percentAchieved < 50).length;
+
+                // Áp dụng bộ lọc nếu người dùng chọn xem riêng nhóm "Dưới 50% chỉ tiêu"
+                if (filterLevel50 === 'under50') {
+                    nonCompliantDrivers = nonCompliantDrivers.filter(d => d.percentAchieved < 50);
+                }
 
                 if (nonCompliantDrivers.length === 0) {
                     container.innerHTML = `
+                        <div class="bg-white p-4 rounded shadow-sm border border-red-100 mb-2 flex gap-4">
+                            <button onclick="changeCanhBaoFilter('all')" class="px-3 py-1 rounded font-bold ${filterLevel50 === 'all' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600'}">Tất cả hụt chỉ tiêu (${data.map(d => { let req = calculateTargetRevenue(d, fromDate, toDate); return req - d.dt; }).filter(def => def > 0).length})</button>
+                            <button onclick="changeCanhBaoFilter('under50')" class="px-3 py-1 rounded font-bold ${filterLevel50 === 'under50' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600'}">⚠️ Dưới 50% chỉ tiêu (${countUnder50})</button>
+                        </div>
                         <div class="bg-white p-12 text-center rounded shadow-sm text-gray-500 border border-gray-100">
-                            <p class="text-emerald-600 font-bold text-sm mb-1">🎉 Tuyệt vời! Không có tài xế nào vi phạm.</p>
-                            <p>Tất cả tài xế trong danh sách đều đạt hoặc vượt định mức doanh số quy định trong kỳ này.</p>
+                            <p class="text-emerald-600 font-bold text-sm mb-1">🎉 Không tìm thấy tài xế nào khớp điều kiện lọc.</p>
                         </div>`;
                     return;
                 }
 
                 container.innerHTML = `
+                    <div class="bg-white p-3 rounded shadow-sm border border-gray-100 mb-2 flex items-center gap-3">
+                        <span class="font-bold text-gray-500">Mức độ lọc nhanh:</span>
+                        <button onclick="changeCanhBaoFilter('all')" class="px-3 py-1.5 rounded font-bold transition text-[11px] ${filterLevel50 === 'all' ? 'bg-red-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
+                            Tất cả hụt chỉ tiêu
+                        </button>
+                        <button onclick="changeCanhBaoFilter('under50')" class="px-3 py-1.5 rounded font-bold transition text-[11px] flex items-center gap-1 ${filterLevel50 === 'under50' ? 'bg-red-700 text-white shadow-sm' : 'bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100'}">
+                            ⚠️ Chỉ xem lái xe đạt DƯỚI 50% chỉ tiêu (<span class="font-black">${countUnder50}</span>)
+                        </button>
+                    </div>
+
                     <div class="bg-white rounded shadow-sm overflow-hidden border border-red-100">
-                        <div class="p-3 bg-red-50 text-red-700 font-bold border-b border-red-100 flex justify-between items-center">
-                            <span>⚠️ DANH SÁCH TÀI XẾ KHÔNG ĐẠT CHỈ TIÊU DOANH SỐ QUY ĐỊNH KỲ NÀY</span>
-                            <span class="bg-red-200 text-red-800 px-2 py-0.5 rounded text-[11px]">Phát hiện ${nonCompliantDrivers.length} tài xế</span>
+                        <div class="p-3 ${filterLevel50 === 'under50' ? 'bg-orange-50 text-orange-800' : 'bg-red-50 text-red-700'} font-bold border-b border-red-100 flex justify-between items-center">
+                            <span class="uppercase">${filterLevel50 === 'under50' ? '⚠️ DANH SÁCH TÀI XẾ NGUY CƠ CAO (ĐẠT DƯỚI 50% ĐỊNH MỨC DOANH SỐ)' : '📋 DANH SÁCH TÀI XẾ CHƯA ĐẠT CHỈ TIÊU KỲ NÀY'}</span>
+                            <span class="bg-white/80 px-2 py-0.5 rounded text-[11px] shadow-sm">Hiển thị ${nonCompliantDrivers.length} tài xế</span>
                         </div>
                         <div class="overflow-x-auto max-h-[500px] custom-scroll">
                             <table class="w-full text-left border-collapse">
@@ -305,14 +332,17 @@
                                         <th class="p-2">Tên Tài Xế</th>
                                         <th class="p-2">Tổ</th>
                                         <th class="p-2">Dòng xe (Model)</th>
-                                        <th class="p-2 text-right">Doanh số Đạt Được</th>
+                                        <th class="p-2 text-right">Doanh số chạy được</th>
                                         <th class="p-2 text-right">Định mức Quy định</th>
-                                        <th class="p-2 text-right pr-4 text-red-600">Còn Thiếu (Chênh lệch)</th>
+                                        <th class="p-2 text-center">% Hoàn thành</th>
+                                        <th class="p-2 text-right pr-4 text-red-600">Còn Thiếu</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
-                                    ${nonCompliantDrivers.map((d, i) => `
-                                        <tr class="hover:bg-red-50/40 transition">
+                                    ${nonCompliantDrivers.map((d, i) => {
+                                        const isCritical = d.percentAchieved < 50;
+                                        return `
+                                        <tr class="${isCritical ? 'bg-orange-50/30 hover:bg-orange-50/60' : 'hover:bg-red-50/30'} transition">
                                             <td class="p-2 pl-4 text-gray-400">${i+1}</td>
                                             <td class="p-2 font-mono font-bold text-gray-800">${d.id}</td>
                                             <td class="p-2 font-medium">${d.name}</td>
@@ -320,15 +350,20 @@
                                             <td class="p-2"><span class="bg-slate-100 px-1.5 py-0.5 rounded font-medium">${d.model}</span></td>
                                             <td class="p-2 text-right font-bold text-gray-600">${d.dt.toLocaleString()} đ</td>
                                             <td class="p-2 text-right font-semibold text-gray-700">${d.targetRevenue.toLocaleString()} đ</td>
-                                            <td class="p-2 text-right pr-4 font-black text-red-600 bg-red-50/50">-${d.deficit.toLocaleString()} đ</td>
-                                        </tr>
-                                    `).join('')}
+                                            <td class="p-2 text-center">
+                                                <span class="px-2 py-0.5 rounded-full font-black ${isCritical ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-amber-100 text-amber-800'}">
+                                                    ${d.percentAchieved.toFixed(1)}%
+                                                </span>
+                                            </td>
+                                            <td class="p-2 text-right pr-4 font-black text-red-600 bg-red-50/30">-${d.deficit.toLocaleString()} đ</td>
+                                        </tr>`;
+                                    }).join('')}
                                 </tbody>
                             </table>
                         </div>
                     </div>`;
 
-            // TAB: SO SÁNH TỔ
+            // CÁC TAB KHÁC GIỮ NGUYÊN HOẠT ĐỘNG ỔN ĐỊNH...
             } else if (currentTab === 'sosanh') {
                 let teams = teamStyles.map(style => ({ ...style, totalTx: 0, activeTx: 0, totalDt: 0, drivers: [] }));
                 data.forEach(item => {
@@ -369,7 +404,6 @@
                 html += `</div>`;
                 container.innerHTML = html;
 
-            // TAB: BẢNG TỔNG HỢP KỲ
             } else if (currentTab === 'tonghop') {
                 container.innerHTML = `
                     <div class="bg-white rounded shadow-sm overflow-hidden border border-gray-100">
@@ -391,7 +425,6 @@
                         </div>
                     </div>`;
 
-            // TAB: TỔNG QUAN
             } else if (currentTab === 'tongquan') {
                 const totalRev = data.reduce((sum, i) => sum + i.dt, 0);
                 const totalTrips = data.reduce((sum, i) => sum + i.cuoc, 0);
@@ -404,7 +437,6 @@
                         <div class="bg-white p-4 rounded shadow-sm border border-gray-100"><p class="text-gray-400 uppercase text-[10px]">Doanh thu bình quân đầu xe</p><p class="text-2xl font-black text-orange-500 my-1">${activeDrivers ? Math.round(totalRev/activeDrivers).toLocaleString() : 0} đ</p></div>
                     </div>`;
 
-            // TAB: TÀI XẾ (HIỆU SUẤT)
             } else if (currentTab === 'taixe') {
                 container.innerHTML = `
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -425,7 +457,6 @@
                         }).join('')}
                     </div>`;
 
-            // TAB: XU HƯỚNG (MODEL XE)
             } else if (currentTab === 'xuhuong') {
                 let modelGroup = {};
                 data.forEach(item => {
@@ -437,7 +468,7 @@
 
                 container.innerHTML = `
                     <div class="bg-white p-4 rounded shadow-sm border border-gray-100">
-                        <h3 class="text-sm font-bold text-gray-700 mb-4">Biêu đồ hiệu quả doanh thu theo Dòng Xe (Model)</h3>
+                        <h3 class="text-sm font-bold text-gray-700 mb-4">Hiệu quả doanh thu theo Dòng Xe (Model)</h3>
                         <div class="space-y-4">
                             ${Object.values(modelGroup).map(m => {
                                 const avgModel = Math.round(m.totalDt / m.count);
@@ -459,7 +490,6 @@
                         </div>
                     </div>`;
 
-            // TAB: XẾP HẠNG
             } else if (currentTab === 'xephang') {
                 const topRevenue = [...data].sort((a,b) => b.dt - a.dt).slice(0, 10);
                 const topCuoc = [...data].sort((a,b) => b.cuoc - a.cuoc).slice(0, 10);
@@ -480,7 +510,6 @@
                             </div>
                         </div>
                         <div class="bg-white p-3 rounded shadow-sm border border-gray-100">
-                            <h3 class="text-blue-700 font-bold border-b pb-2 mb-2 text-sm">⚡ TOP 10 VUA CÀY CUỐC</h3>
                             <div class="divide-y">
                                 ${topCuoc.map((d, idx) => `
                                     <div class="flex justify-between items-center py-2">
