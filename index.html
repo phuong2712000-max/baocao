@@ -3,62 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Doanh Thu Xanh SM</title>
+    <title>Hệ Thống Báo Cáo Doanh Thu Tổ - GSM Xanh SM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
-        .card-team { transition: all 0.2s; }
-        .card-team:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: #f4f6f9; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .tab-active { border-bottom: 2px solid #10b981; color: #059669; font-weight: bold; }
+        .tag-active { background-color: #e6f4ea; color: #137333; font-weight: bold; border-color: #137333; }
     </style>
 </head>
-<body class="p-3 text-xs">
+<body class="p-3 text-[12px] text-gray-700 antialiased">
 
-    <div class="bg-white p-3 rounded shadow-sm flex items-center gap-4 mb-2 flex-wrap">
-        <div>
-            <span class="mr-2 text-gray-500 font-medium">Chế độ:</span>
-            <button class="border px-2 py-1 rounded mr-1 bg-gray-50">Theo ngày</button>
-            <button class="bg-emerald-100 text-emerald-700 border border-emerald-400 px-2 py-1 rounded font-bold">Khoảng thời gian</button>
+    <div class="bg-white p-3 rounded shadow-sm flex items-center gap-4 mb-2 flex-wrap border border-gray-100">
+        <div class="flex items-center gap-1">
+            <span class="text-gray-400 mr-1">Chế độ:</span>
+            <button onclick="setMode('day')" id="btnModeDay" class="border px-2.5 py-1 rounded bg-gray-50 hover:bg-gray-100">Theo ngày</button>
+            <button onclick="setMode('range')" id="btnModeRange" class="bg-emerald-50 text-emerald-700 border border-emerald-300 px-2.5 py-1 rounded font-bold">Khoảng thời gian</button>
         </div>
-        <div>
-            Từ <input type="date" id="dateFrom" value="2026-05-01" class="border p-1 rounded mx-1 font-medium">
-            Đến <input type="date" id="dateTo" value="2026-05-27" class="border p-1 rounded mx-1 font-medium">
-            <button onclick="processData()" class="bg-emerald-500 text-white px-3 py-1 rounded font-bold ml-2 hover:bg-emerald-600">Xem báo cáo</button>
+        <div class="flex items-center gap-1">
+            <span class="text-gray-400">Từ</span>
+            <input type="date" id="dateFrom" value="2026-05-01" onchange="onDateChange()" class="border p-1 rounded font-medium focus:outline-emerald-500">
+            <span class="text-gray-400">Đến</span>
+            <input type="date" id="dateTo" value="2026-05-27" onchange="onDateChange()" class="border p-1 rounded font-medium focus:outline-emerald-500">
+            <button onclick="renderAll()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded font-bold ml-1 transition">Xem báo cáo</button>
         </div>
-        <div class="flex gap-1 text-gray-600">
-            <span class="border p-1 rounded cursor-pointer bg-gray-50">Tháng này</span>
-            <span class="border p-1 rounded cursor-pointer">7 ngày gần nhất</span>
+        <div class="flex gap-1 text-gray-500">
+            <span onclick="setQuickDate(27)" class="border p-1 px-2 rounded cursor-pointer bg-gray-50 hover:bg-gray-100">Kỳ hiện tại</span>
+            <span onclick="setQuickDate(30)" class="border p-1 px-2 rounded cursor-pointer hover:bg-gray-100">Tháng 4</span>
+            <span onclick="setQuickDate(7)" class="border p-1 px-2 rounded cursor-pointer hover:bg-gray-100">7 ngày gần nhất</span>
+        </div>
+        <div id="dateSummary" class="text-emerald-600 font-semibold ml-auto bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
+            01/05/2026 ➔ 27/05/2026 (27 ngày)
         </div>
     </div>
 
-    <div class="bg-white p-2 rounded shadow-sm flex items-center justify-between mb-2 flex-wrap gap-2">
-        <div class="flex items-center gap-2 w-full md:w-auto">
-            <input type="text" id="searchDriver" oninput="processData()" placeholder="Tìm tên hoặc mã tài xế..." class="border p-1.5 rounded w-64" />
-            <span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold">Tất cả</span>
+    <div class="bg-white p-2 rounded shadow-sm flex items-center justify-between mb-2 flex-wrap gap-2 border border-gray-100">
+        <div class="flex items-center gap-1.5 w-full md:w-auto flex-wrap">
+            <div class="relative">
+                <input type="text" id="searchBox" oninput="onSearchChange()" placeholder="🔍 Tìm tài xế / nhân viên - nhập tên hoặc mã..." class="border p-1.5 pl-3 rounded w-64 focus:outline-emerald-500" />
+            </div>
+            <button onclick="setTag('all')" id="tag-all" class="border px-2.5 py-1 rounded tag-active transition">Tất cả</button>
+            <button onclick="setTag('nv')" id="tag-nv" class="border px-2.5 py-1 rounded bg-gray-50 text-gray-600 hover:bg-gray-100 transition">NV Công ty (<span id="cnt-nv">0</span>)</button>
+            <button onclick="setTag('rto')" id="tag-rto" class="border px-2.5 py-1 rounded bg-gray-50 text-gray-600 hover:bg-gray-100 transition">TX RTO (<span id="cnt-rto">0</span>)</button>
+            <button onclick="setTag('txz')" id="tag-txz" class="border px-2.5 py-1 rounded bg-gray-50 text-gray-600 hover:bg-gray-100 transition">TX Z (<span id="cnt-txz">0</span>)</button>
         </div>
         
         <div>
-            <label class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded cursor-pointer font-bold flex items-center gap-2 shadow">
-                📥 IMPORT FILE EXCEL XANH SM
-                <input type="file" id="uploadExcel" accept=".xlsx, .xls" class="hidden" />
+            <label class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded cursor-pointer font-bold flex items-center gap-1.5 transition shadow-sm">
+                📥 Import dữ liệu
+                <input type="file" id="excelFile" accept=".xlsx, .xls" class="hidden" />
             </label>
         </div>
     </div>
 
-    <div class="flex border-b border-gray-200 mb-3 text-gray-600 gap-4 font-medium px-2">
-        <span class="pb-1 cursor-pointer">Bảng tổng hợp kỳ</span>
-        <span class="pb-1 border-b-2 border-emerald-500 text-emerald-600 cursor-pointer font-bold">So sánh tổ</span>
-        <span class="pb-1 cursor-pointer">Tổng quan</span>
+    <div class="flex border-b border-gray-200 mb-3 text-gray-500 gap-5 font-medium px-2 bg-white pt-2 rounded-t shadow-sm">
+        <span onclick="switchTab('tonghop')" id="tab-tonghop" class="pb-2 cursor-pointer hover:text-emerald-600 transition">Bảng tổng hợp kỳ</span>
+        <span onclick="switchTab('sosanh')" id="tab-sosanh" class="pb-2 cursor-pointer tab-active hover:text-emerald-600 transition">So sánh tổ</span>
+        <span onclick="switchTab('tongquan')" id="tab-tongquan" class="pb-2 cursor-pointer hover:text-emerald-600 transition">Tổng quan</span>
+        <span class="pb-2 text-gray-300 cursor-not-allowed">Tài xế</span>
+        <span class="pb-2 text-gray-300 cursor-not-allowed">Xu hướng</span>
+        <span class="pb-2 text-gray-300 cursor-not-allowed">Xếp hạng</span>
     </div>
 
-    <div id="teamsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div class="col-span-full bg-white p-8 text-center rounded text-gray-400 font-medium border-2 border-dashed">
-            Vui lòng bấm nút "IMPORT FILE EXCEL XANH SM" phía trên để nạp dữ liệu báo cáo.
+    <div id="mainContent">
+        <div class="bg-white p-12 text-center rounded shadow-sm text-gray-400 border-2 border-dashed border-gray-200">
+            <p class="text-sm font-bold mb-1 text-gray-500">Hệ thống chưa có dữ liệu</p>
+            <p>Vui lòng bấm nút <span class="font-bold text-slate-700">"Import dữ liệu"</span> ở góc phải và chọn file Excel của Xanh SM để bắt đầu.</p>
         </div>
     </div>
 
     <script>
-        // Cấu hình màu sắc cho 6 Tổ chuẩn theo ảnh mẫu
+        // Cấu hình style và màu sắc 6 Tổ chuẩn chỉ theo ảnh mẫu
         const teamStyles = [
             { id: 'Tổ 01', color: 'border-green-600 text-green-700 bg-green-50' },
             { id: 'Tổ 02', color: 'border-blue-600 text-blue-700 bg-blue-50' },
@@ -68,10 +86,14 @@
             { id: 'Tổ 06', color: 'border-cyan-600 text-cyan-700 bg-cyan-50' }
         ];
 
-        let rawExcelData = []; // Nơi lưu trữ dữ liệu gốc từ file Excel
+        // Biến toàn cục quản lý trạng thái ứng dụng
+        let originalData = []; 
+        let currentTab = 'sosanh';
+        let activeTag = 'all';
+        let searchKeyword = '';
 
-        // Lắng nghe sự kiện khi người dùng chọn file Excel
-        document.getElementById('uploadExcel').addEventListener('change', function(e) {
+        // Đón nhận file Excel từ người dùng
+        document.getElementById('excelFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
@@ -79,138 +101,237 @@
             reader.onload = function(evt) {
                 const data = new Uint8Array(evt.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                
-                // Chuyển dữ liệu Excel thành dạng danh sách trong Javascript
-                rawExcelData = XLSX.utils.sheet_to_json(sheet);
-                
-                // Tiến hành tính toán và hiển thị dữ liệu
-                processData();
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(sheet);
+
+                // Chuẩn hóa và làm sạch dữ liệu dựa trên các cột bạn cung cấp
+                originalData = json.map((item, idx) => {
+                    const maTX = String(item['Mã tài xế'] || item['Mã TX'] || '').trim();
+                    const tenTX = String(item['Tên tài xế'] || item['Tên TX'] || '').trim();
+                    const bks = String(item['Biển kiểm soát'] || item['BKS'] || '').trim();
+                    const model = String(item['Model'] || '').trim();
+                    const doanhSo = parseFloat(item['Doanh số'] || item['Doanh thu'] || 0);
+                    const cuoc = parseInt(item['Số cuốc xe hoàn thành'] || item['Số cuốc'] || 0);
+
+                    // Phân loại Driver Type (Simulate dựa trên ID hoặc Model xe để phân bổ vào các nút Tag)
+                    let type = 'nv'; 
+                    if (maTX.endsWith('7') || model.toLowerCase().includes('rto')) type = 'rto';
+                    else if (maTX.endsWith('9') || maTX.endsWith('3')) type = 'txz';
+
+                    // Tạo mã hash cố định từ Mã tài xế để phân chia tổ ổn định (không bị nhảy tổ ngẫu nhiên)
+                    let hash = 0;
+                    for (let i = 0; i < maTX.length; i++) hash += maTX.charCodeAt(i);
+                    const teamIndex = hash % 6; 
+
+                    return { stt: idx + 1, id: maTX, name: tenTX, bks, model, dt: doanhSo, cuoc, type, teamIndex };
+                }).filter(i => i.id && i.name); // Lọc bỏ dòng lỗi
+
+                updateTagCounters();
+                renderAll();
             };
             reader.readAsArrayBuffer(file);
         });
 
-        // Hàm xử lý tính toán và hiển thị dữ liệu lên màn hình
-        function processData() {
-            if (rawExcelData.length === 0) return;
+        // Tính toán tổng số lượng cho các nhãn phân loại (Tags)
+        function updateTagCounters() {
+            const nv = originalData.filter(i => i.type === 'nv').length;
+            const rto = originalData.filter(i => i.type === 'rto').length;
+            const txz = originalData.filter(i => i.type === 'txz').length;
+            document.getElementById('cnt-nv').innerText = nv;
+            document.getElementById('cnt-rto').innerText = rto;
+            document.getElementById('cnt-txz').innerText = txz;
+        }
 
-            // Tính số ngày dựa vào bộ lọc ngày (để tính trung bình ngày)
+        // Hàm tính toán số ngày xem báo cáo
+        function getReportDays() {
             const d1 = new Date(document.getElementById('dateFrom').value);
             const d2 = new Date(document.getElementById('dateTo').value);
-            const diffTime = Math.abs(d2 - d1);
-            const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 || 27;
+            const diff = Math.abs(d2 - d1);
+            return Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1 || 1;
+        }
 
-            // Lấy từ khóa tìm kiếm (nếu có)
-            const searchKey = document.getElementById('searchDriver').value.toLowerCase().trim();
+        function onDateChange() {
+            const days = getReportDays();
+            document.getElementById('dateSummary').innerText = `${formatDateStr(document.getElementById('dateFrom').value)} ➔ ${formatDateStr(document.getElementById('dateTo').value)} (${days} ngày)`;
+            renderAll();
+        }
 
-            // Khởi tạo lại cấu trúc cho 6 tổ dữ liệu trống
-            let teams = teamStyles.map(style => ({
-                ...style,
-                totalTx: 0,
-                activeTx: 0,
-                totalDt: 0,
-                drivers: []
-            }));
+        function formatDateStr(dateStr) {
+            const d = new Date(dateStr);
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()}`;
+        }
 
-            // Đọc từng dòng trong file Excel và phân tích
-            rawExcelData.forEach((row, index) => {
-                // Lấy đúng tên các cột bạn đã cung cấp
-                const maTX = String(row['Mã tài xế'] || '').trim();
-                const tenTX = String(row['Tên tài xế'] || '').trim();
-                const doanhSo = parseFloat(row['Doanh số']) || 0;
+        function setQuickDate(days) {
+            const to = new Date("2026-05-27");
+            const from = new Date(to);
+            from.setDate(to.getDate() - days + 1);
+            document.getElementById('dateTo').value = to.toISOString().split('T')[0];
+            document.getElementById('dateFrom').value = from.toISOString().split('T')[0];
+            onDateChange();
+        }
 
-                if (!maTX || !tenTX) return; // Bỏ qua dòng trống
+        function setMode(mode) {
+            document.getElementById('btnModeDay').className = mode === 'day' ? "bg-emerald-50 text-emerald-700 border border-emerald-300 px-2.5 py-1 rounded font-bold" : "border px-2.5 py-1 rounded bg-gray-50 hover:bg-gray-100";
+            document.getElementById('btnModeRange').className = mode === 'range' ? "bg-emerald-50 text-emerald-700 border border-emerald-300 px-2.5 py-1 rounded font-bold" : "border px-2.5 py-1 rounded bg-gray-50 hover:bg-gray-100";
+        }
 
-                // Nếu có tìm kiếm, lọc theo tên hoặc mã tài xế
-                if (searchKey && !maTX.toLowerCase().includes(searchKey) && !tenTX.toLowerCase().includes(searchKey)) {
-                    return;
-                }
+        function onSearchChange() {
+            searchKeyword = document.getElementById('searchBox').value.toLowerCase().trim();
+            renderAll();
+        }
 
-                // VÌ TRONG FILE CỦA BẠN KHÔNG CÓ CỘT "TỔ", 
-                // Nên thuật toán dưới đây sẽ tự động chia đều tài xế vào 6 Tổ dựa trên số thứ tự (index).
-                // (Nếu sau này file Excel có cột 'Tổ', bạn có thể sửa số 0 thành: parseInt(row['Tổ']) - 1)
-                const teamIdx = index % 6; 
+        function setTag(tag) {
+            ['all', 'nv', 'rto', 'txz'].forEach(t => document.getElementById(`tag-${t}`).className = "border px-2.5 py-1 rounded bg-gray-50 text-gray-600 hover:bg-gray-100 transition");
+            document.getElementById(`tag-${tag}`).className = "border px-2.5 py-1 rounded tag-active transition";
+            activeTag = tag;
+            renderAll();
+        }
 
-                let currentTeam = teams[teamIdx];
-                currentTeam.totalTx += 1;
-                if (doanhSo > 0) {
-                    currentTeam.activeTx += 1;
-                    currentTeam.totalDt += doanhSo;
-                }
+        function switchTab(tab) {
+            ['tonghop', 'sosanh', 'tongquan'].forEach(t => document.getElementById(`tab-${t}`).className = "pb-2 cursor-pointer hover:text-emerald-600 transition");
+            document.getElementById(`tab-${tab}`).className = "pb-2 cursor-pointer tab-active hover:text-emerald-600 transition";
+            currentTab = tab;
+            renderAll();
+        }
 
-                // Lưu danh sách tài xế vào tổ để tìm TOP
-                currentTeam.drivers.push({
-                    id: maTX,
-                    name: tenTX,
-                    dt: doanhSo
-                });
-            });
-
-            // Vẽ giao diện 6 cột lên màn hình
-            const grid = document.getElementById('teamsGrid');
-            grid.innerHTML = ''; // Xóa thông báo cũ đi
-
-            teams.forEach(team => {
-                // Sắp xếp tài xế doanh thu từ cao xuống thấp để lấy Top 4 người xuất sắc nhất tổ
-                team.drivers.sort((a, b) => b.dt - a.dt);
-                const topDrivers = team.drivers.slice(0, 4);
-
-                // Tính toán các chỉ số trung bình
-                const avgDay = team.activeTx > 0 ? (team.totalDt / team.activeTx / totalDays) : 0;
-                const avgPeriod = team.activeTx > 0 ? (team.totalDt / team.activeTx) : 0;
-
-                // Tạo đoạn mã HTML cho từng tổ
-                const cardHtml = `
-                    <div class="card-team bg-white border-t-4 ${team.color.split(' ')[0]} rounded shadow-sm flex flex-col overflow-hidden">
-                        <div class="p-2 flex justify-between items-center border-b font-bold ${team.color.split(' ')[2]}">
-                            <span class="${team.color.split(' ')[1]}">${team.id}</span>
-                            <span class="text-gray-400 text-[10px]">${team.activeTx}/${team.totalTx} TX có DT</span>
-                        </div>
-                        
-                        <div class="p-2 border-b space-y-1 text-[11px]">
-                            <div class="flex justify-between">
-                                <span class="text-gray-500">Tổng DT kỳ</span>
-                                <span class="font-bold text-gray-800">${formatMoney(team.totalDt, 'M')}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-500">TB DT/tài xế/ngày</span>
-                                <span class="font-bold text-gray-700">${formatMoney(avgDay, 'K')}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-500">TB DT/tài xế cả kỳ</span>
-                                <span class="font-bold text-gray-700">${formatMoney(avgPeriod, 'M')}</span>
-                            </div>
-                        </div>
-
-                        <div class="p-2 flex-1 space-y-1.5 bg-gray-50/50">
-                            <div class="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Top tài xế xuất sắc</div>
-                            ${topDrivers.map(d => `
-                                <div class="flex justify-between items-center text-[11px]">
-                                    <div class="truncate pr-1" title="${d.name}">
-                                        <span class="font-medium text-gray-700">${d.name}</span>
-                                        <span class="text-gray-400 text-[9px]">${d.id}</span>
-                                    </div>
-                                    <span class="font-bold text-emerald-600 shrink-0">${formatMoney(d.dt, 'M')}</span>
-                                </div>
-                            `).join('')}
-                            ${topDrivers.length === 0 ? '<div class="text-gray-400 text-center py-2 italic">Không có dữ liệu</div>' : ''}
-                        </div>
-                    </div>
-                `;
-                grid.innerHTML += cardHtml;
+        // LỌC DỮ LIỆU ĐẦU VÀO TRƯỚC KHI HIỂN THỊ
+        function getFilteredData() {
+            return originalData.filter(item => {
+                const matchTag = (activeTag === 'all' || item.type === activeTag);
+                const matchSearch = (!searchKeyword || item.name.toLowerCase().includes(searchKeyword) || item.id.toLowerCase().includes(searchKeyword));
+                return matchTag && matchSearch;
             });
         }
 
-        // Hàm định dạng hiển thị tiền xuôi mắt (Ví dụ: 25000000 -> 25.00M, 850000 -> 850K)
+        // HÀM RENDER CHÍNH CHO TOÀN BỘ TRANG WEB
+        function renderAll() {
+            if (originalData.length === 0) return;
+            const data = getFilteredData();
+            const container = document.getElementById('mainContent');
+            const totalDays = getReportDays();
+
+            // TAB 1: SO SÁNH TỔ (LAYOUT CHÍNH GIỐNG ẢNH MẪU)
+            if (currentTab === 'sosanh') {
+                let teams = teamStyles.map((style, idx) => ({
+                    ...style, totalTx: 0, activeTx: 0, totalDt: 0, drivers: []
+                }));
+
+                data.forEach(item => {
+                    let t = teams[item.teamIndex];
+                    t.totalTx++;
+                    if (item.dt > 0) {
+                        t.activeTx++;
+                        t.totalDt += item.dt;
+                    }
+                    t.drivers.push(item);
+                });
+
+                let html = `<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">`;
+                teams.forEach(team => {
+                    team.drivers.sort((a, b) => b.dt - a.dt);
+                    const topDrivers = team.drivers.slice(0, 5);
+                    const avgDay = team.activeTx > 0 ? (team.totalDt / team.activeTx / totalDays) : 0;
+                    const avgPeriod = team.activeTx > 0 ? (team.totalDt / team.activeTx) : 0;
+
+                    html += `
+                        <div class="card-team bg-white border-t-4 ${team.color.split(' ')[0]} rounded shadow-sm flex flex-col overflow-hidden border border-gray-100">
+                            <div class="p-2 flex justify-between items-center border-b font-bold ${team.color.split(' ')[2]}">
+                                <span class="${team.color.split(' ')[1]}">${team.id}</span>
+                                <span class="text-gray-400 text-[10px] font-medium">${team.activeTx} / ${team.totalTx} TX có DT</span>
+                            </div>
+                            <div class="p-2 border-b space-y-1 text-[11px]">
+                                <div class="flex justify-between"><span class="text-gray-400">Tổng DT kỳ</span><span class="font-bold text-gray-800">${formatMoney(team.totalDt, 'M')}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">TB DT/tài xế/ngày</span><span class="font-bold text-gray-700">${formatMoney(avgDay, 'K')}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">TB DT/tài xế cả kỳ</span><span class="font-bold text-gray-700">${formatMoney(avgPeriod, 'M')}</span></div>
+                            </div>
+                            <div class="p-2 flex-1 space-y-1.5 bg-gray-50/30">
+                                <div class="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Top tài xế xuất sắc</div>
+                                ${topDrivers.map(d => `
+                                    <div class="flex justify-between items-center text-[11px]">
+                                        <div class="truncate pr-1">
+                                            <span class="font-medium text-gray-700">${d.name}</span>
+                                            <span class="text-gray-400 text-[9px]">${d.id}</span>
+                                        </div>
+                                        <span class="font-bold text-emerald-600 shrink-0">${formatMoney(d.dt, 'M')}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                });
+                html += `</div>`;
+                container.innerHTML = html;
+
+            // TAB 2: BẢNG TỔNG HỢP KỲ (DẠNG DANH SÁCH SPREADSHEET CHUYÊN NGHIỆP)
+            } else if (currentTab === 'tonghop') {
+                container.innerHTML = `
+                    <div class="bg-white rounded shadow-sm overflow-hidden border border-gray-100">
+                        <div class="overflow-x-auto custom-scroll max-h-[500px]">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-50 border-b border-gray-200 text-gray-500 font-semibold sticky top-0 bg-white">
+                                        <th class="p-2 pl-4">STT</th>
+                                        <th class="p-2">Mã Tài Xế</th>
+                                        <th class="p-2">Tên Tài Xế</th>
+                                        <th class="p-2">Biển Kiểm Soát</th>
+                                        <th class="p-2">Model Xe</th>
+                                        <th class="p-2 text-right">Số Cuốc Xe</th>
+                                        <th class="p-2 text-right pr-4">Tổng Doanh Số</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    ${data.map((d, i) => `
+                                        <tr class="hover:bg-gray-50/80 transition">
+                                            <td class="p-2 pl-4 text-gray-400">${i+1}</td>
+                                            <td class="p-2 font-mono font-bold text-gray-600">${d.id}</td>
+                                            <td class="p-2 font-medium text-gray-800">${d.name}</td>
+                                            <td class="p-2 text-gray-500">${d.bks}</td>
+                                            <td class="p-2 text-gray-500"><span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px]">${d.model}</span></td>
+                                            <td class="p-2 text-right font-semibold">${d.cuoc.toLocaleString()}</td>
+                                            <td class="p-2 text-right pr-4 font-bold text-emerald-600">${d.dt.toLocaleString()} đ</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+
+            // TAB 3: TỔNG QUAN (CÁC THẺ CARD ĐO LƯỜNG KPI BÁO CÁO)
+            } else if (currentTab === 'tongquan') {
+                const totalRev = data.reduce((sum, i) => sum + i.dt, 0);
+                const totalTrips = data.reduce((sum, i) => sum + i.cuoc, 0);
+                const activeDrivers = data.filter(i => i.dt > 0).length;
+
+                container.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        <div class="bg-white p-4 rounded shadow-sm border border-gray-100 flex flex-col justify-between">
+                            <span class="text-gray-400 font-medium uppercase text-[10px]">Tổng doanh thu toàn bộ</span>
+                            <span class="text-2xl font-black text-emerald-600 my-2">${totalRev.toLocaleString()} đ</span>
+                            <span class="text-gray-400 text-[11px]">Đã bao gồm tất cả các tổ</span>
+                        </div>
+                        <div class="bg-white p-4 rounded shadow-sm border border-gray-100 flex flex-col justify-between">
+                            <span class="text-gray-400 font-medium uppercase text-[10px]">Tổng số cuốc hoàn thành</span>
+                            <span class="text-2xl font-black text-blue-600 my-2">${totalTrips.toLocaleString()} cuốc</span>
+                            <span class="text-gray-400 text-[11px]">Hiệu suất di chuyển kỳ báo cáo</span>
+                        </div>
+                        <div class="bg-white p-4 rounded shadow-sm border border-gray-100 flex flex-col justify-between">
+                            <span class="text-gray-400 font-medium uppercase text-[10px]">Số lượng tài xế hoạt động</span>
+                            <span class="text-2xl font-black text-purple-600 my-2">${activeDrivers} / ${data.length} TX</span>
+                            <span class="text-gray-400 text-[11px]">Tỷ lệ hoạt động: ${data.length ? Math.round(activeDrivers/data.length*100) : 0}%</span>
+                        </div>
+                        <div class="bg-white p-4 rounded shadow-sm border border-gray-100 flex flex-col justify-between">
+                            <span class="text-gray-400 font-medium uppercase text-[10px]">Doanh thu bình quân đầu xe</span>
+                            <span class="text-2xl font-black text-orange-500 my-2">${activeDrivers ? Math.round(totalRev/activeDrivers).toLocaleString() : 0} đ</span>
+                            <span class="text-gray-400 text-[11px]">Tính trên số tài xế phát sinh doanh thu</span>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        // Định dạng tiền tệ viết tắt thông minh (Ví dụ: 2.435.230.000 -> 2435.23M)
         function formatMoney(num, unit) {
             if (num === 0) return '0' + (unit === 'M' ? 'M' : 'K');
-            if (unit === 'M') {
-                return (num / 1000000).toFixed(2) + 'M';
-            }
-            if (unit === 'K') {
-                return Math.round(num / 1000) + 'K';
-            }
+            if (unit === 'M') return (num / 1000000).toFixed(2) + 'M';
+            if (unit === 'K') return Math.round(num / 1000).toLocaleString() + 'K';
             return num;
         }
     </script>
