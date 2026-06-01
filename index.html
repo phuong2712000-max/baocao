@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Báo Cáo Doanh Thu Tổ - GSM Xanh SM</title>
+    <title>Hệ Thống Báo Cáo Doanh Thu Toàn Diện - GSM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
@@ -42,9 +42,7 @@
 
     <div class="bg-white p-2 rounded shadow-sm flex items-center justify-between mb-2 flex-wrap gap-2 border border-gray-100">
         <div class="flex items-center gap-1.5 w-full md:w-auto flex-wrap">
-            <div class="relative">
-                <input type="text" id="searchBox" oninput="onSearchChange()" placeholder="🔍 Tìm tài xế / nhân viên - nhập tên hoặc mã..." class="border p-1.5 pl-3 rounded w-64 focus:outline-emerald-500" />
-            </div>
+            <input type="text" id="searchBox" oninput="onSearchChange()" placeholder="🔍 Tìm tài xế / nhân viên - nhập tên hoặc mã..." class="border p-1.5 pl-3 rounded w-64 focus:outline-emerald-500" />
             <button onclick="setTag('all')" id="tag-all" class="border px-2.5 py-1 rounded tag-active transition">Tất cả</button>
             <button onclick="setTag('nv')" id="tag-nv" class="border px-2.5 py-1 rounded bg-gray-50 text-gray-600 hover:bg-gray-100 transition">NV Công ty (<span id="cnt-nv">0</span>)</button>
             <button onclick="setTag('rto')" id="tag-rto" class="border px-2.5 py-1 rounded bg-gray-50 text-gray-600 hover:bg-gray-100 transition">TX RTO (<span id="cnt-rto">0</span>)</button>
@@ -59,13 +57,13 @@
         </div>
     </div>
 
-    <div class="flex border-b border-gray-200 mb-3 text-gray-500 gap-5 font-medium px-2 bg-white pt-2 rounded-t shadow-sm">
+    <div class="flex border-b border-gray-200 mb-3 text-gray-500 gap-5 font-medium px-2 bg-white pt-2 rounded-t shadow-sm overflow-x-auto whitespace-nowrap">
         <span onclick="switchTab('tonghop')" id="tab-tonghop" class="pb-2 cursor-pointer hover:text-emerald-600 transition">Bảng tổng hợp kỳ</span>
         <span onclick="switchTab('sosanh')" id="tab-sosanh" class="pb-2 cursor-pointer tab-active hover:text-emerald-600 transition">So sánh tổ</span>
         <span onclick="switchTab('tongquan')" id="tab-tongquan" class="pb-2 cursor-pointer hover:text-emerald-600 transition">Tổng quan</span>
-        <span class="pb-2 text-gray-300 cursor-not-allowed">Tài xế</span>
-        <span class="pb-2 text-gray-300 cursor-not-allowed">Xu hướng</span>
-        <span class="pb-2 text-gray-300 cursor-not-allowed">Xếp hạng</span>
+        <span onclick="switchTab('taixe')" id="tab-taixe" class="pb-2 cursor-pointer hover:text-emerald-600 transition">Tài xế</span>
+        <span onclick="switchTab('xuhuong')" id="tab-xuhuong" class="pb-2 cursor-pointer hover:text-emerald-600 transition">Xu hướng</span>
+        <span onclick="switchTab('xephang')" id="tab-xephang" class="pb-2 cursor-pointer hover:text-emerald-600 transition">Xếp hạng</span>
     </div>
 
     <div id="mainContent">
@@ -76,7 +74,6 @@
     </div>
 
     <script>
-        // Cấu hình style và màu sắc 6 Tổ chuẩn chỉ theo ảnh mẫu
         const teamStyles = [
             { id: 'Tổ 01', color: 'border-green-600 text-green-700 bg-green-50' },
             { id: 'Tổ 02', color: 'border-blue-600 text-blue-700 bg-blue-50' },
@@ -86,13 +83,11 @@
             { id: 'Tổ 06', color: 'border-cyan-600 text-cyan-700 bg-cyan-50' }
         ];
 
-        // Biến toàn cục quản lý trạng thái ứng dụng
         let originalData = []; 
         let currentTab = 'sosanh';
         let activeTag = 'all';
         let searchKeyword = '';
 
-        // Đón nhận file Excel từ người dùng
         document.getElementById('excelFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -104,7 +99,6 @@
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 const json = XLSX.utils.sheet_to_json(sheet);
 
-                // Chuẩn hóa và làm sạch dữ liệu dựa trên các cột bạn cung cấp
                 originalData = json.map((item, idx) => {
                     const maTX = String(item['Mã tài xế'] || item['Mã TX'] || '').trim();
                     const tenTX = String(item['Tên tài xế'] || item['Tên TX'] || '').trim();
@@ -113,18 +107,16 @@
                     const doanhSo = parseFloat(item['Doanh số'] || item['Doanh thu'] || 0);
                     const cuoc = parseInt(item['Số cuốc xe hoàn thành'] || item['Số cuốc'] || 0);
 
-                    // Phân loại Driver Type (Simulate dựa trên ID hoặc Model xe để phân bổ vào các nút Tag)
                     let type = 'nv'; 
-                    if (maTX.endsWith('7') || model.toLowerCase().includes('rto')) type = 'rto';
-                    else if (maTX.endsWith('9') || maTX.endsWith('3')) type = 'txz';
+                    if (maTX.length % 3 === 0) type = 'rto';
+                    else if (maTX.length % 3 === 1) type = 'txz';
 
-                    // Tạo mã hash cố định từ Mã tài xế để phân chia tổ ổn định (không bị nhảy tổ ngẫu nhiên)
                     let hash = 0;
                     for (let i = 0; i < maTX.length; i++) hash += maTX.charCodeAt(i);
                     const teamIndex = hash % 6; 
 
                     return { stt: idx + 1, id: maTX, name: tenTX, bks, model, dt: doanhSo, cuoc, type, teamIndex };
-                }).filter(i => i.id && i.name); // Lọc bỏ dòng lỗi
+                }).filter(i => i.id && i.name);
 
                 updateTagCounters();
                 renderAll();
@@ -132,22 +124,16 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // Tính toán tổng số lượng cho các nhãn phân loại (Tags)
         function updateTagCounters() {
-            const nv = originalData.filter(i => i.type === 'nv').length;
-            const rto = originalData.filter(i => i.type === 'rto').length;
-            const txz = originalData.filter(i => i.type === 'txz').length;
-            document.getElementById('cnt-nv').innerText = nv;
-            document.getElementById('cnt-rto').innerText = rto;
-            document.getElementById('cnt-txz').innerText = txz;
+            document.getElementById('cnt-nv').innerText = originalData.filter(i => i.type === 'nv').length;
+            document.getElementById('cnt-rto').innerText = originalData.filter(i => i.type === 'rto').length;
+            document.getElementById('cnt-txz').innerText = originalData.filter(i => i.type === 'txz').length;
         }
 
-        // Hàm tính toán số ngày xem báo cáo
         function getReportDays() {
             const d1 = new Date(document.getElementById('dateFrom').value);
             const d2 = new Date(document.getElementById('dateTo').value);
-            const diff = Math.abs(d2 - d1);
-            return Math.ceil(diff / (1000 * 60 * 60 * 24)) + 1 || 1;
+            return Math.ceil(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24)) + 1 || 1;
         }
 
         function onDateChange() {
@@ -188,13 +174,15 @@
         }
 
         function switchTab(tab) {
-            ['tonghop', 'sosanh', 'tongquan'].forEach(t => document.getElementById(`tab-${t}`).className = "pb-2 cursor-pointer hover:text-emerald-600 transition");
+            ['tonghop', 'sosanh', 'tongquan', 'taixe', 'xuhuong', 'xephang'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if(el) el.className = "pb-2 cursor-pointer hover:text-emerald-600 transition";
+            });
             document.getElementById(`tab-${tab}`).className = "pb-2 cursor-pointer tab-active hover:text-emerald-600 transition";
             currentTab = tab;
             renderAll();
         }
 
-        // LỌC DỮ LIỆU ĐẦU VÀO TRƯỚC KHI HIỂN THỊ
         function getFilteredData() {
             return originalData.filter(item => {
                 const matchTag = (activeTag === 'all' || item.type === activeTag);
@@ -203,26 +191,19 @@
             });
         }
 
-        // HÀM RENDER CHÍNH CHO TOÀN BỘ TRANG WEB
         function renderAll() {
             if (originalData.length === 0) return;
             const data = getFilteredData();
             const container = document.getElementById('mainContent');
             const totalDays = getReportDays();
 
-            // TAB 1: SO SÁNH TỔ (LAYOUT CHÍNH GIỐNG ẢNH MẪU)
+            // TAB: SO SÁNH TỔ
             if (currentTab === 'sosanh') {
-                let teams = teamStyles.map((style, idx) => ({
-                    ...style, totalTx: 0, activeTx: 0, totalDt: 0, drivers: []
-                }));
-
+                let teams = teamStyles.map(style => ({ ...style, totalTx: 0, activeTx: 0, totalDt: 0, drivers: [] }));
                 data.forEach(item => {
                     let t = teams[item.teamIndex];
                     t.totalTx++;
-                    if (item.dt > 0) {
-                        t.activeTx++;
-                        t.totalDt += item.dt;
-                    }
+                    if (item.dt > 0) { t.activeTx++; t.totalDt += item.dt; }
                     t.drivers.push(item);
                 });
 
@@ -234,25 +215,21 @@
                     const avgPeriod = team.activeTx > 0 ? (team.totalDt / team.activeTx) : 0;
 
                     html += `
-                        <div class="card-team bg-white border-t-4 ${team.color.split(' ')[0]} rounded shadow-sm flex flex-col overflow-hidden border border-gray-100">
+                        <div class="card-team bg-white border-t-4 ${team.color.split(' ')[0]} rounded shadow-sm flex flex-col border border-gray-100">
                             <div class="p-2 flex justify-between items-center border-b font-bold ${team.color.split(' ')[2]}">
                                 <span class="${team.color.split(' ')[1]}">${team.id}</span>
-                                <span class="text-gray-400 text-[10px] font-medium">${team.activeTx} / ${team.totalTx} TX có DT</span>
+                                <span class="text-gray-400 text-[10px]">${team.activeTx}/${team.totalTx} TX có DT</span>
                             </div>
                             <div class="p-2 border-b space-y-1 text-[11px]">
                                 <div class="flex justify-between"><span class="text-gray-400">Tổng DT kỳ</span><span class="font-bold text-gray-800">${formatMoney(team.totalDt, 'M')}</span></div>
-                                <div class="flex justify-between"><span class="text-gray-400">TB DT/tài xế/ngày</span><span class="font-bold text-gray-700">${formatMoney(avgDay, 'K')}</span></div>
-                                <div class="flex justify-between"><span class="text-gray-400">TB DT/tài xế cả kỳ</span><span class="font-bold text-gray-700">${formatMoney(avgPeriod, 'M')}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">TB DT/TX/ngày</span><span class="font-bold text-gray-700">${formatMoney(avgDay, 'K')}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">TB DT/TX cả kỳ</span><span class="font-bold text-gray-700">${formatMoney(avgPeriod, 'M')}</span></div>
                             </div>
                             <div class="p-2 flex-1 space-y-1.5 bg-gray-50/30">
-                                <div class="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Top tài xế xuất sắc</div>
                                 ${topDrivers.map(d => `
                                     <div class="flex justify-between items-center text-[11px]">
-                                        <div class="truncate pr-1">
-                                            <span class="font-medium text-gray-700">${d.name}</span>
-                                            <span class="text-gray-400 text-[9px]">${d.id}</span>
-                                        </div>
-                                        <span class="font-bold text-emerald-600 shrink-0">${formatMoney(d.dt, 'M')}</span>
+                                        <div class="truncate"><span class="font-medium text-gray-700">${d.name}</span></div>
+                                        <span class="font-bold text-emerald-600">${formatMoney(d.dt, 'M')}</span>
                                     </div>
                                 `).join('')}
                             </div>
@@ -261,33 +238,21 @@
                 html += `</div>`;
                 container.innerHTML = html;
 
-            // TAB 2: BẢNG TỔNG HỢP KỲ (DẠNG DANH SÁCH SPREADSHEET CHUYÊN NGHIỆP)
+            // TAB: BẢNG TỔNG HỢP KỲ
             } else if (currentTab === 'tonghop') {
                 container.innerHTML = `
                     <div class="bg-white rounded shadow-sm overflow-hidden border border-gray-100">
-                        <div class="overflow-x-auto custom-scroll max-h-[500px]">
+                        <div class="overflow-x-auto max-h-[500px] custom-scroll">
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="bg-gray-50 border-b border-gray-200 text-gray-500 font-semibold sticky top-0 bg-white">
-                                        <th class="p-2 pl-4">STT</th>
-                                        <th class="p-2">Mã Tài Xế</th>
-                                        <th class="p-2">Tên Tài Xế</th>
-                                        <th class="p-2">Biển Kiểm Soát</th>
-                                        <th class="p-2">Model Xe</th>
-                                        <th class="p-2 text-right">Số Cuốc Xe</th>
-                                        <th class="p-2 text-right pr-4">Tổng Doanh Số</th>
+                                        <th class="p-2 pl-4">STT</th><th class="p-2">Mã TX</th><th class="p-2">Tên Tài Xế</th><th class="p-2">BKS</th><th class="p-2">Model</th><th class="p-2 text-right">Số Cuốc</th><th class="p-2 text-right pr-4">Tổng Doanh Số</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
                                     ${data.map((d, i) => `
-                                        <tr class="hover:bg-gray-50/80 transition">
-                                            <td class="p-2 pl-4 text-gray-400">${i+1}</td>
-                                            <td class="p-2 font-mono font-bold text-gray-600">${d.id}</td>
-                                            <td class="p-2 font-medium text-gray-800">${d.name}</td>
-                                            <td class="p-2 text-gray-500">${d.bks}</td>
-                                            <td class="p-2 text-gray-500"><span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px]">${d.model}</span></td>
-                                            <td class="p-2 text-right font-semibold">${d.cuoc.toLocaleString()}</td>
-                                            <td class="p-2 text-right pr-4 font-bold text-emerald-600">${d.dt.toLocaleString()} đ</td>
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="p-2 pl-4 text-gray-400">${i+1}</td><td class="p-2 font-mono font-bold">${d.id}</td><td class="p-2 font-medium">${d.name}</td><td class="p-2">${d.bks}</td><td class="p-2"><span class="bg-gray-100 px-1.5 py-0.5 rounded">${d.model}</span></td><td class="p-2 text-right font-semibold">${d.cuoc}</td><td class="p-2 text-right pr-4 font-bold text-emerald-600">${d.dt.toLocaleString()} đ</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -295,39 +260,111 @@
                         </div>
                     </div>`;
 
-            // TAB 3: TỔNG QUAN (CÁC THẺ CARD ĐO LƯỜNG KPI BÁO CÁO)
+            // TAB: TỔNG QUAN
             } else if (currentTab === 'tongquan') {
                 const totalRev = data.reduce((sum, i) => sum + i.dt, 0);
                 const totalTrips = data.reduce((sum, i) => sum + i.cuoc, 0);
                 const activeDrivers = data.filter(i => i.dt > 0).length;
+                container.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded shadow-sm border border-gray-100"><p class="text-gray-400 uppercase text-[10px]">Tổng doanh thu</p><p class="text-2xl font-black text-emerald-600 my-1">${totalRev.toLocaleString()} đ</p></div>
+                        <div class="bg-white p-4 rounded shadow-sm border border-gray-100"><p class="text-gray-400 uppercase text-[10px]">Tổng số cuốc</p><p class="text-2xl font-black text-blue-600 my-1">${totalTrips.toLocaleString()} cuốc</p></div>
+                        <div class="bg-white p-4 rounded shadow-sm border border-gray-100"><p class="text-gray-400 uppercase text-[10px]">Tài xế hoạt động</p><p class="text-2xl font-black text-purple-600 my-1">${activeDrivers} / ${data.length} TX</p></div>
+                        <div class="bg-white p-4 rounded shadow-sm border border-gray-100"><p class="text-gray-400 uppercase text-[10px]">Doanh thu bình quân đầu xe</p><p class="text-2xl font-black text-orange-500 my-1">${activeDrivers ? Math.round(totalRev/activeDrivers).toLocaleString() : 0} đ</p></div>
+                    </div>`;
+
+            // TAB MỚI 1: TÀI XẾ (HIỆU SUẤT)
+            } else if (currentTab === 'taixe') {
+                container.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        ${data.slice(0, 30).map(d => {
+                            const hieuSuat = d.cuoc > 0 ? Math.round(d.dt / d.cuoc) : 0;
+                            return `
+                            <div class="bg-white p-3 rounded shadow-sm border border-gray-100 flex flex-col justify-between">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div><p class="font-bold text-gray-800 text-[13px]">${d.name}</p><p class="text-gray-400 font-mono text-[10px]">${d.id} | Tổ 0${d.teamIndex + 1}</p></div>
+                                    <span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold">${d.model}</span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-1 border-t pt-2 text-center text-[11px]">
+                                    <div><p class="text-gray-400">Doanh thu</p><p class="font-bold text-slate-700">${formatMoney(d.dt, 'M')}</p></div>
+                                    <div><p class="text-gray-400">Số cuốc</p><p class="font-bold text-slate-700">${d.cuoc}</p></div>
+                                    <div><p class="text-gray-400">Giá trị/cuốc</p><p class="font-bold text-emerald-600">${formatMoney(hieuSuat, 'K')}</p></div>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>`;
+
+            // TAB MỚI 2: XU HƯỚNG (PHÂN TÍCH THEO MODEL XE)
+            } else if (currentTab === 'xuhuong') {
+                let modelGroup = {};
+                data.forEach(item => {
+                    if(!modelGroup[item.model]) modelGroup[item.model] = { name: item.model, totalDt: 0, totalCuoc: 0, count: 0 };
+                    modelGroup[item.model].totalDt += item.dt;
+                    modelGroup[item.model].totalCuoc += item.cuoc;
+                    modelGroup[item.model].count++;
+                });
 
                 container.innerHTML = `
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                        <div class="bg-white p-4 rounded shadow-sm border border-gray-100 flex flex-col justify-between">
-                            <span class="text-gray-400 font-medium uppercase text-[10px]">Tổng doanh thu toàn bộ</span>
-                            <span class="text-2xl font-black text-emerald-600 my-2">${totalRev.toLocaleString()} đ</span>
-                            <span class="text-gray-400 text-[11px]">Đã bao gồm tất cả các tổ</span>
+                    <div class="bg-white p-4 rounded shadow-sm border border-gray-100">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4">Biểu đồ phân tích hiệu quả doanh thu theo Dòng Xe (Model)</h3>
+                        <div class="space-y-4">
+                            ${Object.values(modelGroup).map(m => {
+                                const avgModel = Math.round(m.totalDt / m.count);
+                                return `
+                                <div>
+                                    <div class="flex justify-between mb-1 font-medium">
+                                        <span>🚗 Dòng xe: <strong class="text-slate-800">${m.name || 'Chưa phân loại'}</strong> (${m.count} xe)</span>
+                                        <span class="text-emerald-600 font-bold">Tổng doanh số: ${m.totalDt.toLocaleString()} đ</span>
+                                    </div>
+                                    <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                                        <div class="bg-gradient-to-r from-emerald-400 to-teal-600 h-3 rounded-full" style="width: ${Math.min(100, (m.totalDt / 100000000) * 100)}%"></div>
+                                    </div>
+                                    <div class="flex gap-4 text-gray-400 text-[11px] mt-1">
+                                        <span>Tổng số cuốc: <strong>${m.totalCuoc}</strong></span>
+                                        <span>Bình quân/đầu xe: <strong class="text-gray-600">${avgModel.toLocaleString()} đ</strong></span>
+                                    </div>
+                                </div>`;
+                            }).join('')}
                         </div>
-                        <div class="bg-white p-4 rounded shadow-sm border border-gray-100 flex flex-col justify-between">
-                            <span class="text-gray-400 font-medium uppercase text-[10px]">Tổng số cuốc hoàn thành</span>
-                            <span class="text-2xl font-black text-blue-600 my-2">${totalTrips.toLocaleString()} cuốc</span>
-                            <span class="text-gray-400 text-[11px]">Hiệu suất di chuyển kỳ báo cáo</span>
+                    </div>`;
+
+            // TAB MỚI 3: XẾP HẠNG (LEADERBOARD)
+            } else if (currentTab === 'xephang') {
+                const topRevenue = [...data].sort((a,b) => b.dt - a.dt).slice(0, 10);
+                const topCuoc = [...data].sort((a,b) => b.cuoc - a.cuoc).slice(0, 10);
+
+                container.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white p-3 rounded shadow-sm border border-gray-100">
+                            <h3 class="text-emerald-700 font-bold border-b pb-2 mb-2 text-sm flex items-center gap-1">🏆 TOP 10 VUA DOANH SỐ KỲ</h3>
+                            <div class="divide-y">
+                                ${topRevenue.map((d, idx) => `
+                                    <div class="flex justify-between items-center py-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-5 h-5 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center font-bold text-[10px]">${idx+1}</span>
+                                            <div><p class="font-semibold text-gray-800">${d.name}</p><p class="text-gray-400 text-[10px]">${d.id} - Tổ 0${d.teamIndex+1}</p></div>
+                                        </div>
+                                        <span class="font-black text-emerald-600">${d.dt.toLocaleString()} đ</span>
+                                    </div>`).join('')}
+                            </div>
                         </div>
-                        <div class="bg-white p-4 rounded shadow-sm border border-gray-100 flex flex-col justify-between">
-                            <span class="text-gray-400 font-medium uppercase text-[10px]">Số lượng tài xế hoạt động</span>
-                            <span class="text-2xl font-black text-purple-600 my-2">${activeDrivers} / ${data.length} TX</span>
-                            <span class="text-gray-400 text-[11px]">Tỷ lệ hoạt động: ${data.length ? Math.round(activeDrivers/data.length*100) : 0}%</span>
-                        </div>
-                        <div class="bg-white p-4 rounded shadow-sm border border-gray-100 flex flex-col justify-between">
-                            <span class="text-gray-400 font-medium uppercase text-[10px]">Doanh thu bình quân đầu xe</span>
-                            <span class="text-2xl font-black text-orange-500 my-2">${activeDrivers ? Math.round(totalRev/activeDrivers).toLocaleString() : 0} đ</span>
-                            <span class="text-gray-400 text-[11px]">Tính trên số tài xế phát sinh doanh thu</span>
+                        <div class="bg-white p-3 rounded shadow-sm border border-gray-100">
+                            <h3 class="text-blue-700 font-bold border-b pb-2 mb-2 text-sm flex items-center gap-1">⚡ TOP 10 VUA CÀY CUỐC KỲ</h3>
+                            <div class="divide-y">
+                                ${topCuoc.map((d, idx) => `
+                                    <div class="flex justify-between items-center py-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-5 h-5 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center font-bold text-[10px]">${idx+1}</span>
+                                            <div><p class="font-semibold text-gray-800">${d.name}</p><p class="text-gray-400 text-[10px]">${d.id} - Tổ 0${d.teamIndex+1}</p></div>
+                                        </div>
+                                        <span class="font-black text-blue-600">${d.cuoc} cuốc xe</span>
+                                    </div>`).join('')}
+                            </div>
                         </div>
                     </div>`;
             }
         }
 
-        // Định dạng tiền tệ viết tắt thông minh (Ví dụ: 2.435.230.000 -> 2435.23M)
         function formatMoney(num, unit) {
             if (num === 0) return '0' + (unit === 'M' ? 'M' : 'K');
             if (unit === 'M') return (num / 1000000).toFixed(2) + 'M';
