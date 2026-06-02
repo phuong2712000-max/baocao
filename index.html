@@ -3,228 +3,263 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Quản Lý Tài Xế</title>
+    <title>Hệ Thống Quản Lý Tài Xế - Doanh Thu & Cuốc Xe</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
-<body class="bg-gray-100 font-sans antialiased text-gray-800">
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen">
 
     <div class="container mx-auto px-4 py-8">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-blue-600 mb-2">🚗 DASHBOARD PHÂN TÍCH HIỆU SUẤT TÀI XẾ</h1>
-            <p class="text-gray-600">Chọn hoặc kéo thả file Excel/CSV mẫu của bạn vào ô dưới đây để xem báo cáo trực quan.</p>
+        <header class="mb-8 text-center md:text-left md:flex justify-between items-center border-b pb-6 border-gray-200">
+            <div>
+                <h1 class="text-3xl font-bold text-blue-600">Hệ Thống Quản Lý Tài Xế</h1>
+                <p class="text-gray-500 mt-1">Theo dõi doanh thu, số cuốc xe và quản lý dữ liệu cộng dồn</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex flex-wrap gap-3 justify-center">
+                <label class="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium cursor-pointer transition shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span>Import File (Cộng dồn)</span>
+                    <input type="file" id="fileInput" accept=".csv" class="hidden" multiple>
+                </label>
+                <button id="clearBtn" class="flex items-center gap-2 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Xóa tất cả dữ liệu
+                </button>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Tổng Doanh Số</p>
+                <p id="statRevenue" class="text-2xl font-bold text-green-600 mt-2">0 đ</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Tổng Số Cuốc Hoàn Thành</p>
+                <p id="statTrips" class="text-2xl font-bold text-blue-600 mt-2">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Số Lượng Tài Xế</p>
+                <p id="statDrivers" class="text-2xl font-bold text-indigo-600 mt-2">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Số Bản Ghi Dữ Liệu</p>
+                <p id="statRows" class="text-2xl font-bold text-gray-600 mt-2">0</p>
+            </div>
         </div>
 
-        <div class="bg-white p-6 rounded-lg shadow-md max-w-xl mx-auto mb-8 border-2 border-dashed border-blue-300 hover:border-blue-500 transition-all text-center">
-            <input type="file" id="uploadFile" accept=".xlsx, .xls, .csv" class="hidden">
-            <label for="uploadFile" class="cursor-pointer block">
-                <svg class="mx-auto h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                </svg>
-                <span class="text-blue-500 font-medium hover:underline">Nhấp vào đây để chọn file Excel</span> hoặc kéo thả file vào đây
-            </label>
-            <div id="fileName" class="text-sm text-green-600 mt-2 font-semibold"></div>
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-2">Tìm kiếm tài xế</label>
+                <input type="text" id="searchFilter" placeholder="Nhập tên, mã tài xế hoặc BKS..." 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-2">Lọc theo ngày phân công</label>
+                <input type="date" id="dateFilter" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+            </div>
+            <div class="flex items-end">
+                <button id="resetFilterBtn" class="w-full md:w-auto px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition">
+                    Xóa bộ lọc
+                </button>
+            </div>
         </div>
 
-        <div id="dashboardContent" class="hidden">
-            
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
-                    <p class="text-sm text-gray-500 font-medium uppercase">Tổng số tài xế</p>
-                    <p id="kpiDrivers" class="text-2xl font-bold text-gray-800 mt-1">0</p>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
-                    <p class="text-sm text-gray-500 font-medium uppercase">Tổng Doanh Số</p>
-                    <p id="kpiRevenue" class="text-2xl font-bold text-gray-800 mt-1">0 đ</p>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-500">
-                    <p class="text-sm text-gray-500 font-medium uppercase">Tổng số cuốc xe</p>
-                    <p id="kpiTrips" class="text-2xl font-bold text-gray-800 mt-1">0</p>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
-                    <p class="text-sm text-gray-500 font-medium uppercase">Tỷ lệ hoàn thành TB</p>
-                    <p id="kpiRate" class="text-2xl font-bold text-gray-800 mt-1">0%</p>
-                </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                <table class="w-full text-left border-collapse min-w-max">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 font-semibold text-sm border-b border-gray-200 sticky top-0 z-10">
+                            <th class="p-4 bg-gray-50">STT</th>
+                            <th class="p-4 bg-gray-50">Mã tài xế</th>
+                            <th class="p-4 bg-gray-50">Tên tài xế</th>
+                            <th class="p-4 bg-gray-50">Biển kiểm soát</th>
+                            <th class="p-4 bg-gray-50">Ngày phân công</th>
+                            <th class="p-4 bg-gray-50 text-right">Doanh số</th>
+                            <th class="p-4 bg-gray-50 text-center">Số cuốc hoàn thành</th>
+                            <th class="p-4 bg-gray-50">Dòng xe / Model</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody" class="divide-y divide-gray-100 text-sm">
+                        <tr>
+                            <td colspan="8" class="p-8 text-center text-gray-400">
+                                Chưa có dữ liệu. Vui lòng nhấn nút "Import File" ở góc trên để tải file dữ liệu lên.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-700">Top 10 Tài Xế Doanh Số Cao Nhất</h3>
-                    <div style="position: relative; height:350px;">
-                        <canvas id="revenueChart"></canvas>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-700">Tỷ Lệ Cuốc Xe Theo Dòng Xe (Model)</h3>
-                    <div style="position: relative; height:350px; display: flex; justify-content: center;">
-                        <canvas id="modelChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="p-4 bg-gray-50 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-700">📋 Danh Sách Chi Tiết Tài Xế</h3>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã tài xế</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên tài xế</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Khu vực</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doanh số</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số cuốc hoàn thành</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tỷ lệ hoàn thành</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody" class="bg-white divide-y divide-gray-200">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
-
         </div>
     </div>
 
     <script>
-        let revenueChartInstance = null;
-        let modelChartInstance = null;
+        // Mảng chứa toàn bộ dữ liệu tài xế (Lưu trong bộ nhớ để cộng dồn)
+        let globalDriverData = [];
 
-        document.getElementById('uploadFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        // Lấy các element cần thiết
+        const fileInput = document.getElementById('fileInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const searchFilter = document.getElementById('searchFilter');
+        const dateFilter = document.getElementById('dateFilter');
+        const resetFilterBtn = document.getElementById('resetFilterBtn');
+        const dataTableBody = document.getElementById('dataTableBody');
 
-            document.getElementById('fileName').innerText = "📄 Đang xử lý file: " + file.name;
+        // Các element thống kê
+        const statRevenue = document.getElementById('statRevenue');
+        const statTrips = document.getElementById('statTrips');
+        const statDrivers = document.getElementById('statDrivers');
+        const statRows = document.getElementById('statRows');
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                
-                // Lấy trang tính đầu tiên trong file Excel
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                
-                // Chuyển đổi dữ liệu sang dạng Danh sách JSON để xử lý bằng JavaScript
-                const rawData = XLSX.utils.sheet_to_json(worksheet);
-                
-                if(rawData.length === 0) {
-                    alert("File không có dữ liệu hoặc sai định dạng mẫu!");
-                    return;
-                }
+        // Sự kiện khi chọn file import
+        fileInput.addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length === 0) return;
 
-                XửLýDữLiệuBáoCáo(rawData);
-            };
-            reader.readAsArrayBuffer(file);
+            let filesProcessed = 0;
+
+            for(let i = 0; i < files.length; i++) {
+                Papa.parse(files[i], {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        // Chuẩn hóa và thêm dữ liệu vào bộ nhớ cộng dồn
+                        const parsedData = results.data.map(row => {
+                            // Hàm làm sạch chuỗi và chuyển đổi kiểu dữ liệu
+                            return {
+                                id: row['Mã tài xế'] ? row['Mã tài xế'].trim() : '',
+                                name: row['Tên tài xế'] ? row['Tên tài xế'].trim() : 'Không rõ',
+                                plate: row['Biển kiểm soát'] ? row['Biển kiểm soát'].trim() : '',
+                                date: row['Ngày phân công'] ? row['Ngày phân công'].trim() : '',
+                                revenue: parseNumber(row['Doanh số']),
+                                trips: parseNumber(row['Số cuốc xe hoàn thành'] || row['Số cuốc hoàn thành']),
+                                model: row['Model'] || row['Dòng xe'] || ''
+                            };
+                        }).filter(item => item.id !== ''); // Lọc bỏ hàng rỗng hoặc lỗi
+
+                        globalDriverData = globalDriverData.concat(parsedData);
+                        filesProcessed++;
+
+                        // Khi tất cả các file đã xử lý xong thì render lại giao diện
+                        if (filesProcessed === files.length) {
+                            alert(`Đã nạp cộng dồn thành công! Tổng số dòng hiện tại: ${globalDriverData.length}`);
+                            renderData();
+                            fileInput.value = ''; // Reset input file
+                        }
+                    },
+                    error: function(err) {
+                        console.error("Lỗi khi đọc file: ", err);
+                    }
+                });
+            }
         });
 
-        function XửLýDữLiệuBáoCáo(data) {
-            // Hiện vùng chứa nội dung dashboard
-            document.getElementById('dashboardContent').classList.remove('hidden');
+        // Hàm ép kiểu dữ liệu chuỗi số thành kiểu Number chuẩn
+        function parseNumber(val) {
+            if (!val) return 0;
+            // Xóa mọi ký tự không phải số (Ví dụ dấu phẩy, dấu chấm phân tách phần nghìn)
+            let cleaned = val.toString().replace(/[^0-9.-]/g, '');
+            let num = parseFloat(cleaned);
+            return isNaN(num) ? 0 : num;
+        }
 
+        // Định dạng số thành tiền VND
+        function formatVND(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        // Chuyển đổi định dạng ngày YYYY-MM-DD từ input thành DD/MM/YYYY để so khớp với file
+        function formatDateToDDMMYYYY(dateStr) {
+            if(!dateStr) return '';
+            const parts = dateStr.split('-');
+            if(parts.length === 3) {
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            return '';
+        }
+
+        // Hàm render dữ liệu ra bảng và cập nhật Dashboard dựa trên Bộ Lọc
+        function renderData() {
+            const searchValue = searchFilter.value.toLowerCase().trim();
+            const dateValue = formatDateToDDMMYYYY(dateFilter.value);
+
+            // Tiến hành lọc dữ liệu
+            const filteredData = globalDriverData.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchValue) || 
+                                      item.id.toLowerCase().includes(searchValue) || 
+                                      item.plate.toLowerCase().includes(searchValue);
+                
+                const matchesDate = dateValue === '' || item.date === dateValue;
+
+                return matchesSearch && matchesDate;
+            });
+
+            // Tính toán số liệu thống kê dựa trên dữ liệu đã lọc
             let totalRevenue = 0;
             let totalTrips = 0;
-            let totalRateSum = 0;
-            let countRate = 0;
-            let driverCount = data.length;
+            let uniqueDrivers = new Set();
 
-            let modelMap = {};
-            let driverRevenueList = [];
+            // Xóa bảng cũ để render bảng mới
+            dataTableBody.innerHTML = '';
 
-            // Làm sạch bảng dữ liệu cũ
-            const tableBody = document.getElementById('tableBody');
-            tableBody.innerHTML = '';
+            if (filteredData.length === 0) {
+                dataTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="p-8 text-center text-gray-400">
+                            Không tìm thấy dữ liệu nào phù hợp với bộ lọc hiện tại.
+                        </td>
+                    </tr>`;
+            } else {
+                // Đổ dữ liệu vào bảng
+                filteredData.forEach((item, index) => {
+                    totalRevenue += item.revenue;
+                    totalTrips += item.trips;
+                    uniqueDrivers.add(item.id);
 
-            data.forEach(row => {
-                // Đọc dữ liệu từ file (tự động điền 0 nếu rỗng)
-                let maTX = row['Mã tài xế'] || 'Không rõ';
-                let tenTX = row['Tên tài xế'] || 'Không rõ';
-                let model = row['Model'] || 'Khác';
-                let khuVuc = row['Khu vực'] || 'Khác';
-                let doanhSo = parseFloat(row['Doanh số']) || 0;
-                let cuocXe = parseInt(row['Số cuốc xe hoàn thành']) || 0;
-                let tyLe = parseFloat(row['Tỷ lệ hoàn thành']) || 0;
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50 transition";
+                    tr.innerHTML = `
+                        <td class="p-4 text-gray-500">${index + 1}</td>
+                        <td class="p-4 font-medium text-gray-700">${item.id}</td>
+                        <td class="p-4 text-gray-900">${item.name}</td>
+                        <td class="p-4 text-gray-600">${item.plate}</td>
+                        <td class="p-4 text-gray-600">${item.date}</td>
+                        <td class="p-4 text-right font-semibold text-green-600">${formatVND(item.revenue)}</td>
+                        <td class="p-4 text-center text-blue-600 font-medium">${item.trips}</td>
+                        <td class="p-4 text-gray-500 text-xs">${item.model}</td>
+                    `;
+                    dataTableBody.appendChild(tr);
+                });
+            }
 
-                // Tính tổng cộng dồn KPI
-                totalRevenue += doanhSo;
-                totalTrips += cuocXe;
-                if(row['Tỷ lệ hoàn thành'] !== undefined) {
-                    totalRateSum += tyLe;
-                    countRate++;
-                }
-
-                // Nhóm dữ liệu theo dòng xe (Model) để vẽ hình tròn
-                modelMap[model] = (modelMap[model] || 0) + cuocXe;
-
-                // Lưu danh sách doanh thu tài xế để lọc Top 10
-                driverRevenueList.push({ name: tenTX, revenue: doanhSo });
-
-                // Thêm một hàng mới vào bảng dữ liệu chi tiết ở dưới cùng
-                let tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${maTX}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${tenTX}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${model}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${khuVuc}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">${doanhSo.toLocaleString('vi-VN')} đ</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${cuocXe} cuốc</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${tyLe}%</td>
-                `;
-                tableBody.appendChild(tr);
-            });
-
-            // 1. Ghi các chỉ số KPI lên màn hình
-            document.getElementById('kpiDrivers').innerText = driverCount.toLocaleString('vi-VN');
-            document.getElementById('kpiRevenue').innerText = totalRevenue.toLocaleString('vi-VN') + " đ";
-            document.getElementById('kpiTrips').innerText = totalTrips.toLocaleString('vi-VN') + " cuốc";
-            document.getElementById('kpiRate').innerText = countRate > 0 ? (totalRateSum / countRate).toFixed(1) + "%" : "0%";
-
-            // 2. Xử lý dữ liệu vẽ biểu đồ cột Top 10 doanh số tài xế
-            driverRevenueList.sort((a, b) => b.revenue - a.revenue);
-            let top10 = driverRevenueList.slice(0, 10);
-            let labelsRevenue = top10.map(x => x.name);
-            let dataRevenue = top10.map(x => x.revenue);
-
-            if(revenueChartInstance) revenueChartInstance.destroy(); // Xóa biểu đồ cũ nếu có
-            const ctxRev = document.getElementById('revenueChart').getContext('2d');
-            revenueChartInstance = new Chart(ctxRev, {
-                type: 'bar',
-                data: {
-                    labels: labelsRevenue,
-                    datasets: [{
-                        label: 'Doanh số (VND)',
-                        data: dataRevenue,
-                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                        borderColor: 'rgb(59, 130, 246)',
-                        borderWidth: 1
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-
-            // 3. Xử lý dữ liệu vẽ biểu đồ hình tròn Model xe công nghệ
-            let labelsModel = Object.keys(modelMap);
-            let dataModel = Object.values(modelMap);
-
-            if(modelChartInstance) modelChartInstance.destroy(); // Xóa biểu đồ cũ nếu có
-            const ctxModel = document.getElementById('modelChart').getContext('2d');
-            modelChartInstance = new Chart(ctxModel, {
-                type: 'doughnut',
-                data: {
-                    labels: labelsModel,
-                    datasets: [{
-                        data: dataModel,
-                        backgroundColor: [
-                            '#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#6366F1', '#EC4899'
-                        ]
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+            // Cập nhật các ô số liệu tổng quan (Dashboard)
+            statRevenue.textContent = formatVND(totalRevenue);
+            statTrips.textContent = totalTrips.toLocaleString('vi-VN');
+            statDrivers.textContent = uniqueDrivers.size.toLocaleString('vi-VN');
+            statRows.textContent = filteredData.length.toLocaleString('vi-VN');
         }
+
+        // Lắng nghe sự kiện gõ tìm kiếm và chọn ngày để tự động lọc trực tiếp
+        searchFilter.addEventListener('input', renderData);
+        dateFilter.addEventListener('change', renderData);
+
+        // Nút xóa bộ lọc
+        resetFilterBtn.addEventListener('click', function() {
+            searchFilter.value = '';
+            dateFilter.value = '';
+            renderData();
+        });
+
+        // Nút xóa sạch toàn bộ dữ liệu hệ thống
+        clearBtn.addEventListener('click', function() {
+            if(confirm("Bạn có chắc chắn muốn xóa toàn bộ dữ liệu đã import không?")) {
+                globalDriverData = [];
+                renderData();
+            }
+        });
     </script>
 </body>
 </html>
