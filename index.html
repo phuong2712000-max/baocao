@@ -1,144 +1,230 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import re
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Quản Lý Tài Xế</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800">
 
-# 1. Cấu hình trang Dashboard
-st.set_page_config(page_title="Dashboard Quản Lý Tài Xế", layout="wide", page_icon="🚗")
+    <div class="container mx-auto px-4 py-8">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-600 mb-2">🚗 DASHBOARD PHÂN TÍCH HIỆU SUẤT TÀI XẾ</h1>
+            <p class="text-gray-600">Chọn hoặc kéo thả file Excel/CSV mẫu của bạn vào ô dưới đây để xem báo cáo trực quan.</p>
+        </div>
 
-st.title("🚗 Dashboard Phân Tích Hiệu Suất Tài Xế")
-st.markdown("Ứng dụng hỗ trợ import dữ liệu vận hành từ file Excel/CSV mẫu để theo dõi KPI trực quan.")
+        <div class="bg-white p-6 rounded-lg shadow-md max-w-xl mx-auto mb-8 border-2 border-dashed border-blue-300 hover:border-blue-500 transition-all text-center">
+            <input type="file" id="uploadFile" accept=".xlsx, .xls, .csv" class="hidden">
+            <label for="uploadFile" class="cursor-pointer block">
+                <svg class="mx-auto h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                <span class="text-blue-500 font-medium hover:underline">Nhấp vào đây để chọn file Excel</span> hoặc kéo thả file vào đây
+            </label>
+            <div id="fileName" class="text-sm text-green-600 mt-2 font-semibold"></div>
+        </div>
 
-# Hàm bổ trợ chuyển đổi định dạng thời gian "7h33m" thành dạng số (Giờ) để tính toán
-def parse_time_to_hours(time_str):
-    if pd.isna(time_str) or not isinstance(time_str, str):
-        return 0.0
-    match = re.match(r'(?:(\d+)h)?(?:(\d+)m)?', time_str)
-    if match:
-        hours = int(match.group(1)) if match.group(1) else 0
-        minutes = int(match.group(2)) if match.group(2) else 0
-        return hours + minutes / 60.0
-    return 0.0
-
-# 2. Thành phần Upload File
-uploaded_file = st.file_uploader("Kéo thả hoặc chọn file dữ liệu tài xế (Excel hoặc CSV)", type=["xlsx", "csv"])
-
-if uploaded_file is not None:
-    try:
-        # Đọc file tùy theo định dạng đầu vào
-        if uploaded_file.name.endswith('.csv'):
-            df = pd.read_csv(uploaded_file)
-        else:
-            df = pd.read_excel(uploaded_file)
-        
-        st.success("Tải dữ liệu thành công!")
-        
-        # 3. Tiền xử lý dữ liệu để vẽ biểu đồ và tính toán
-        numeric_cols = ['Doanh số', 'Tổng giá trị cuốc xe', 'Số cuốc xe hoàn thành', 'Tỷ lệ nhận chuyến', 'Tỷ lệ hủy chuyến', 'Tỷ lệ hoàn thành']
-        for col in numeric_cols:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-                
-        if 'Tổng thời gian online' in df.columns:
-            df['Thời gian online (Giờ)'] = df['Tổng thời gian online'].apply(parse_time_to_hours)
+        <div id="dashboardContent" class="hidden">
             
-        # 4. Thanh điều hướng bên hông (Sidebar) - Bộ lọc
-        st.sidebar.header("Bộ Lọc Dữ Liệu")
-        
-        # Lọc theo Khu vực
-        khu_vuc_list = ['Tất cả'] + list(df['Khu vực'].dropna().unique()) if 'Khu vực' in df.columns else ['Tất cả']
-        selected_khu_vuc = st.sidebar.selectbox("Chọn Khu vực", khu_vuc_list)
-        
-        # Lọc theo Model xe
-        model_list = ['Tất cả'] + list(df['Model'].dropna().unique()) if 'Model' in df.columns else ['Tất cả']
-        selected_model = st.sidebar.selectbox("Chọn Model Xe", model_list)
-        
-        # Lọc theo Tìm kiếm tên / mã tài xế
-        search_driver = st.sidebar.text_input("Tìm kiếm Tên hoặc Mã tài xế")
-        
-        # Áp dụng bộ lọc vào Dataframe
-        df_filtered = df.copy()
-        if selected_khu_vuc != 'Tất cả':
-            df_filtered = df_filtered[df_filtered['Khu vực'] == selected_khu_vuc]
-        if selected_model != 'Tất cả':
-            df_filtered = df_filtered[df_filtered['Model'] == selected_model]
-        if search_driver:
-            df_filtered = df_filtered[
-                df_filtered['Tên tài xế'].astype(str).str.contains(search_driver, case=False) | 
-                df_filtered['Mã tài xế'].astype(str).str.contains(search_driver, case=False)
-            ]
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
+                    <p class="text-sm text-gray-500 font-medium uppercase">Tổng số tài xế</p>
+                    <p id="kpiDrivers" class="text-2xl font-bold text-gray-800 mt-1">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
+                    <p class="text-sm text-gray-500 font-medium uppercase">Tổng Doanh Số</p>
+                    <p id="kpiRevenue" class="text-2xl font-bold text-gray-800 mt-1">0 đ</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-500">
+                    <p class="text-sm text-gray-500 font-medium uppercase">Tổng số cuốc xe</p>
+                    <p id="kpiTrips" class="text-2xl font-bold text-gray-800 mt-1">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
+                    <p class="text-sm text-gray-500 font-medium uppercase">Tỷ lệ hoàn thành TB</p>
+                    <p id="kpiRate" class="text-2xl font-bold text-gray-800 mt-1">0%</p>
+                </div>
+            </div>
 
-        # 5. HIỂN THỊ CÁC CHỈ SỐ KPI TỔNG QUAN
-        st.subheader("📊 Chỉ số KPI Tổng Quan")
-        kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-        
-        total_drivers = df_filtered['Mã tài xế'].nunique()
-        total_revenue = df_filtered['Doanh số'].sum()
-        total_trips = df_filtered['Số cuốc xe hoàn thành'].sum()
-        avg_completion = df_filtered['Tỷ lệ hoàn thành'].mean() if 'Tỷ lệ hoàn thành' in df_filtered.columns else 0
-        
-        kpi1.metric(label="Tổng số tài xế đang lọc", value=f"{total_drivers:,}")
-        kpi2.metric(label="Tổng Doanh Số (VND)", value=f"{total_revenue:,.0f} đ")
-        kpi3.metric(label="Tổng số cuốc hoàn thành", value=f"{total_trips:,} cuốc")
-        kpi4.metric(label="Tỷ lệ hoàn thành trung bình", value=f"{avg_completion:.1f}%")
-        
-        st.markdown("---")
-        
-        # 6. HIỂN THỊ CÁC BIỂU ĐỒ PHÂN TÍCH (Vùng đồ thị chia làm 2 cột)
-        st.subheader("📈 Biểu đồ Phân Tích Trực Quan")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.write("**Top 10 Tài Xế Có Doanh Số Cao Nhất**")
-            if 'Tên tài xế' in df_filtered.columns and 'Doanh số' in df_filtered.columns:
-                top_drivers = df_filtered.groupby('Tên tài xế')['Doanh số'].sum().reset_index()
-                top_drivers = top_drivers.sort_values(by='Doanh số', ascending=False).head(10)
-                fig_revenue = px.bar(top_drivers, x='Doanh số', y='Tên tài xế', orientation='h',
-                                     labels={'Doanh số': 'Doanh số (VND)', 'Tên tài xế': 'Tài xế'},
-                                     color='Doanh số', color_continuous_scale='Blues')
-                fig_revenue.update_layout(yaxis={'categoryorder':'total ascending'})
-                st.plotly_chart(fig_revenue, use_container_width=True)
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-700">Top 10 Tài Xế Doanh Số Cao Nhất</h3>
+                    <div style="position: relative; height:350px;">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-700">Tỷ Lệ Cuốc Xe Theo Dòng Xe (Model)</h3>
+                    <div style="position: relative; height:350px; display: flex; justify-content: center;">
+                        <canvas id="modelChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="p-4 bg-gray-50 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-700">📋 Danh Sách Chi Tiết Tài Xế</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã tài xế</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên tài xế</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Khu vực</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doanh số</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số cuốc hoàn thành</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tỷ lệ hoàn thành</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="bg-white divide-y divide-gray-200">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let revenueChartInstance = null;
+        let modelChartInstance = null;
+
+        document.getElementById('uploadFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('fileName').innerText = "📄 Đang xử lý file: " + file.name;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
                 
-        with col2:
-            st.write("**Tỷ Lệ Đóng Góp Cuốc Xe Theo Model Xe**")
-            if 'Model' in df_filtered.columns and 'Số cuốc xe hoàn thành' in df_filtered.columns:
-                model_trips = df_filtered.groupby('Model')['Số cuốc xe hoàn thành'].sum().reset_index()
-                fig_model = px.pie(model_trips, values='Số cuốc xe hoàn thành', names='Model',
-                                   hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu)
-                st.plotly_chart(fig_model, use_container_width=True)
+                // Lấy trang tính đầu tiên trong file Excel
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
                 
-        col3, col4 = st.columns(2)
-        with col3:
-            st.write("**Phân Tích Tương Quan: Tỷ lệ Hoàn thành vs Tỷ lệ Hủy chuyến**")
-            if all(c in df_filtered.columns for c in ['Tên tài xế', 'Tỷ lệ hoàn thành', 'Tỷ lệ hủy chuyến']):
-                fig_scatter = px.scatter(df_filtered, x='Tỷ lệ hoàn thành', y='Tỷ lệ hủy chuyến',
-                                         hover_data=['Tên tài xế', 'Mã tài xế'], color='Model',
-                                         labels={'Tỷ lệ hoàn thành': 'Tỷ lệ hoàn thành (%)', 'Tỷ lệ hủy chuyến': 'Tỷ lệ hủy chuyến (%)'})
-                st.plotly_chart(fig_scatter, use_container_width=True)
+                // Chuyển đổi dữ liệu sang dạng Danh sách JSON để xử lý bằng JavaScript
+                const rawData = XLSX.utils.sheet_to_json(worksheet);
                 
-        with col4:
-            st.write("**Thời Gian Online Trung Bình Theo Khu Vực (Giờ)**")
-            if 'Khu vực' in df_filtered.columns and 'Thời gian online (Giờ)' in df_filtered.columns:
-                kv_online = df_filtered.groupby('Khu vực')['Thời gian online (Giờ)'].mean().reset_index()
-                fig_kv = px.bar(kv_online, x='Khu vực', y='Thời gian online (Giờ)',
-                               labels={'Thời gian online (Giờ)': 'Thời gian Online TB (Giờ)'},
-                               color='Khu vực', color_discrete_sequence=px.colors.qualitative.Pastel)
-                st.plotly_chart(fig_kv, use_container_width=True)
-                
-        st.markdown("---")
-        
-        # 7. BẢNG DỮ LIỆU CHI TIẾT
-        st.subheader("📋 Chi tiết Bảng Dữ Liệu (Sau khi lọc)")
-        display_cols = [c for c in ['Mã tài xế', 'Tên tài xế', 'Biển kiểm soát', 'Model', 'Khu vực', 'Doanh số', 'Số cuốc xe hoàn thành', 'Tỷ lệ hoàn thành', 'Tổng thời gian online'] if c in df_filtered.columns]
-        st.dataframe(
-            df_filtered[display_cols].style.format({
-                'Doanh số': '{:,.0f} đ', 
-                'Tỷ lệ hoàn thành': '{:.1f}%'
-            }), 
-            use_container_width=True
-        )
-        
-    except Exception as e:
-        st.error(f"Đã xảy ra lỗi khi xử lý file dữ liệu: {e}")
-else:
-    st.info("💡 Vui lòng kéo thả hoặc click chọn file dữ liệu tài xế (Excel hoặc CSV) ở trên để hiển thị Dashboard.")
+                if(rawData.length === 0) {
+                    alert("File không có dữ liệu hoặc sai định dạng mẫu!");
+                    return;
+                }
+
+                XửLýDữLiệuBáoCáo(rawData);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function XửLýDữLiệuBáoCáo(data) {
+            // Hiện vùng chứa nội dung dashboard
+            document.getElementById('dashboardContent').classList.remove('hidden');
+
+            let totalRevenue = 0;
+            let totalTrips = 0;
+            let totalRateSum = 0;
+            let countRate = 0;
+            let driverCount = data.length;
+
+            let modelMap = {};
+            let driverRevenueList = [];
+
+            // Làm sạch bảng dữ liệu cũ
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            data.forEach(row => {
+                // Đọc dữ liệu từ file (tự động điền 0 nếu rỗng)
+                let maTX = row['Mã tài xế'] || 'Không rõ';
+                let tenTX = row['Tên tài xế'] || 'Không rõ';
+                let model = row['Model'] || 'Khác';
+                let khuVuc = row['Khu vực'] || 'Khác';
+                let doanhSo = parseFloat(row['Doanh số']) || 0;
+                let cuocXe = parseInt(row['Số cuốc xe hoàn thành']) || 0;
+                let tyLe = parseFloat(row['Tỷ lệ hoàn thành']) || 0;
+
+                // Tính tổng cộng dồn KPI
+                totalRevenue += doanhSo;
+                totalTrips += cuocXe;
+                if(row['Tỷ lệ hoàn thành'] !== undefined) {
+                    totalRateSum += tyLe;
+                    countRate++;
+                }
+
+                // Nhóm dữ liệu theo dòng xe (Model) để vẽ hình tròn
+                modelMap[model] = (modelMap[model] || 0) + cuocXe;
+
+                // Lưu danh sách doanh thu tài xế để lọc Top 10
+                driverRevenueList.push({ name: tenTX, revenue: doanhSo });
+
+                // Thêm một hàng mới vào bảng dữ liệu chi tiết ở dưới cùng
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${maTX}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${tenTX}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${model}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${khuVuc}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">${doanhSo.toLocaleString('vi-VN')} đ</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${cuocXe} cuốc</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${tyLe}%</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            // 1. Ghi các chỉ số KPI lên màn hình
+            document.getElementById('kpiDrivers').innerText = driverCount.toLocaleString('vi-VN');
+            document.getElementById('kpiRevenue').innerText = totalRevenue.toLocaleString('vi-VN') + " đ";
+            document.getElementById('kpiTrips').innerText = totalTrips.toLocaleString('vi-VN') + " cuốc";
+            document.getElementById('kpiRate').innerText = countRate > 0 ? (totalRateSum / countRate).toFixed(1) + "%" : "0%";
+
+            // 2. Xử lý dữ liệu vẽ biểu đồ cột Top 10 doanh số tài xế
+            driverRevenueList.sort((a, b) => b.revenue - a.revenue);
+            let top10 = driverRevenueList.slice(0, 10);
+            let labelsRevenue = top10.map(x => x.name);
+            let dataRevenue = top10.map(x => x.revenue);
+
+            if(revenueChartInstance) revenueChartInstance.destroy(); // Xóa biểu đồ cũ nếu có
+            const ctxRev = document.getElementById('revenueChart').getContext('2d');
+            revenueChartInstance = new Chart(ctxRev, {
+                type: 'bar',
+                data: {
+                    labels: labelsRevenue,
+                    datasets: [{
+                        label: 'Doanh số (VND)',
+                        data: dataRevenue,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgb(59, 130, 246)',
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 3. Xử lý dữ liệu vẽ biểu đồ hình tròn Model xe công nghệ
+            let labelsModel = Object.keys(modelMap);
+            let dataModel = Object.values(modelMap);
+
+            if(modelChartInstance) modelChartInstance.destroy(); // Xóa biểu đồ cũ nếu có
+            const ctxModel = document.getElementById('modelChart').getContext('2d');
+            modelChartInstance = new Chart(ctxModel, {
+                type: 'doughnut',
+                data: {
+                    labels: labelsModel,
+                    datasets: [{
+                        data: dataModel,
+                        backgroundColor: [
+                            '#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#6366F1', '#EC4899'
+                        ]
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    </script>
+</body>
+</html>
