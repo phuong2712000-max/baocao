@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Quản Lý Tài Xế - Doanh Thu & Cuốc Xe</title>
+    <title>Hệ Thống Quản Lý Tài Xế - Doanh Thu & Cuốc Xe (Excel)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen">
 
@@ -13,15 +13,15 @@
         <header class="mb-8 text-center md:text-left md:flex justify-between items-center border-b pb-6 border-gray-200">
             <div>
                 <h1 class="text-3xl font-bold text-blue-600">Hệ Thống Quản Lý Tài Xế</h1>
-                <p class="text-gray-500 mt-1">Theo dõi doanh thu, số cuốc xe và quản lý dữ liệu cộng dồn</p>
+                <p class="text-gray-500 mt-1">Theo dõi doanh thu, số cuốc xe và quản lý dữ liệu cộng dồn từ file Excel</p>
             </div>
             <div class="mt-4 md:mt-0 flex flex-wrap gap-3 justify-center">
-                <label class="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium cursor-pointer transition shadow-md">
+                <label class="flex items-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium cursor-pointer transition shadow-md">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                    <span>Import File (Cộng dồn)</span>
-                    <input type="file" id="fileInput" accept=".csv" class="hidden" multiple>
+                    <span>Import File Excel (Cộng dồn)</span>
+                    <input type="file" id="fileInput" accept=".xlsx, .xls" class="hidden" multiple>
                 </label>
                 <button id="clearBtn" class="flex items-center gap-2 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition shadow-md">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,7 +87,7 @@
                     <tbody id="dataTableBody" class="divide-y divide-gray-100 text-sm">
                         <tr>
                             <td colspan="8" class="p-8 text-center text-gray-400">
-                                Chưa có dữ liệu. Vui lòng nhấn nút "Import File" ở góc trên để tải file dữ liệu lên.
+                                Chưa có dữ liệu. Vui lòng chọn file Excel (.xlsx, .xls) để tải lên hệ thống.
                             </td>
                         </tr>
                     </tbody>
@@ -97,10 +97,10 @@
     </div>
 
     <script>
-        // Mảng chứa toàn bộ dữ liệu tài xế (Lưu trong bộ nhớ để cộng dồn)
+        // Mảng lưu trữ dữ liệu tài xế để cộng dồn
         let globalDriverData = [];
 
-        // Lấy các element cần thiết
+        // DOM Elements
         const fileInput = document.getElementById('fileInput');
         const clearBtn = document.getElementById('clearBtn');
         const searchFilter = document.getElementById('searchFilter');
@@ -108,85 +108,118 @@
         const resetFilterBtn = document.getElementById('resetFilterBtn');
         const dataTableBody = document.getElementById('dataTableBody');
 
-        // Các element thống kê
+        // Thống kê Elements
         const statRevenue = document.getElementById('statRevenue');
         const statTrips = document.getElementById('statTrips');
         const statDrivers = document.getElementById('statDrivers');
         const statRows = document.getElementById('statRows');
 
-        // Sự kiện khi chọn file import
+        // Sự kiện xử lý File Excel khi người dùng chọn file
         fileInput.addEventListener('change', function(e) {
             const files = e.target.files;
             if (files.length === 0) return;
 
             let filesProcessed = 0;
 
-            for(let i = 0; i < files.length; i++) {
-                Papa.parse(files[i], {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: function(results) {
-                        // Chuẩn hóa và thêm dữ liệu vào bộ nhớ cộng dồn
-                        const parsedData = results.data.map(row => {
-                            // Hàm làm sạch chuỗi và chuyển đổi kiểu dữ liệu
-                            return {
-                                id: row['Mã tài xế'] ? row['Mã tài xế'].trim() : '',
-                                name: row['Tên tài xế'] ? row['Tên tài xế'].trim() : 'Không rõ',
-                                plate: row['Biển kiểm soát'] ? row['Biển kiểm soát'].trim() : '',
-                                date: row['Ngày phân công'] ? row['Ngày phân công'].trim() : '',
-                                revenue: parseNumber(row['Doanh số']),
-                                trips: parseNumber(row['Số cuốc xe hoàn thành'] || row['Số cuốc hoàn thành']),
-                                model: row['Model'] || row['Dòng xe'] || ''
-                            };
-                        }).filter(item => item.id !== ''); // Lọc bỏ hàng rỗng hoặc lỗi
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
 
-                        globalDriverData = globalDriverData.concat(parsedData);
-                        filesProcessed++;
+                reader.onload = function(e) {
+                    const data = new Uint8Array(e.target.result);
+                    // Đọc workbook với thuộc tính cellDates để tự động xử lý cột Ngày tháng nếu có
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    
+                    // Lấy Sheet đầu tiên của file Excel
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Chuyển Sheet thành dạng mảng Object JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-                        // Khi tất cả các file đã xử lý xong thì render lại giao diện
-                        if (filesProcessed === files.length) {
-                            alert(`Đã nạp cộng dồn thành công! Tổng số dòng hiện tại: ${globalDriverData.length}`);
-                            renderData();
-                            fileInput.value = ''; // Reset input file
-                        }
-                    },
-                    error: function(err) {
-                        console.error("Lỗi khi đọc file: ", err);
+                    // Chuẩn hóa cấu trúc cột dữ liệu phù hợp với hệ thống
+                    const parsedData = jsonData.map(row => {
+                        return {
+                            id: row['Mã tài xế'] ? row['Mã tài xế'].toString().trim() : '',
+                            name: row['Tên tài xế'] ? row['Tên tài xế'].toString().trim() : 'Không rõ',
+                            plate: row['Biển kiểm soát'] ? row['Biển kiểm soát'].toString().trim() : '',
+                            date: parseExcelDate(row['Ngày phân công']),
+                            revenue: parseNumber(row['Doanh số']),
+                            trips: parseNumber(row['Số cuốc xe hoàn thành'] || row['Số cuốc hoàn thành']),
+                            model: row['Model'] || row['Dòng xe'] || ''
+                        };
+                    }).filter(item => item.id !== ''); // Loại bỏ dòng trống không có mã tài xế
+
+                    // Cộng dồn vào mảng tổng toàn cục
+                    globalDriverData = globalDriverData.concat(parsedData);
+                    filesProcessed++;
+
+                    // Sau khi đọc hết tất cả các file được chọn cùng lúc
+                    if (filesProcessed === files.length) {
+                        alert(`Đã nạp cộng dồn file Excel thành công!\nTổng cộng hệ thống đang có: ${globalDriverData.length} dòng dữ liệu.`);
+                        renderData();
+                        fileInput.value = ''; // Reset input
                     }
-                });
+                };
+
+                reader.readAsArrayBuffer(file);
             }
         });
 
-        // Hàm ép kiểu dữ liệu chuỗi số thành kiểu Number chuẩn
+        // Hàm xử lý định dạng ngày tháng từ file Excel sang dạng Chuỗi chuẩn DD/MM/YYYY
+        function parseExcelDate(val) {
+            if (!val) return '';
+            
+            // Trường hợp Excel tự động nhận diện thành đối tượng Date trong JS
+            if (val instanceof Date) {
+                const d = val.getDate().toString().padStart(2, '0');
+                const m = (val.getMonth() + 1).toString().padStart(2, '0');
+                const y = val.getFullYear();
+                return `${d}/${m}/${y}`;
+            }
+            
+            // Trường hợp ngày tháng dạng chuỗi ISO (Ví dụ: 2026-06-01T00:00:00)
+            if (typeof val === 'string' && val.includes('-')) {
+                const cleanStr = val.split('T')[0];
+                const parts = cleanStr.split('-');
+                if (parts.length === 3 && parts[0].length === 4) { // YYYY-MM-DD
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                }
+            }
+            
+            return val.toString().trim(); // Giữ nguyên chuỗi gốc nếu là dạng DD/MM/YYYY chuẩn text
+        }
+
+        // Hàm làm sạch chuỗi và đổi thành kiểu số Number chuẩn
         function parseNumber(val) {
             if (!val) return 0;
-            // Xóa mọi ký tự không phải số (Ví dụ dấu phẩy, dấu chấm phân tách phần nghìn)
+            if (typeof val === 'number') return val;
             let cleaned = val.toString().replace(/[^0-9.-]/g, '');
             let num = parseFloat(cleaned);
             return isNaN(num) ? 0 : num;
         }
 
-        // Định dạng số thành tiền VND
+        // Đổi số thành định dạng tiền tệ VND
         function formatVND(amount) {
             return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
         }
 
-        // Chuyển đổi định dạng ngày YYYY-MM-DD từ input thành DD/MM/YYYY để so khớp với file
+        // Đổi ngày YYYY-MM-DD từ thanh chọn `<input type="date">` thành dạng DD/MM/YYYY để lọc dữ liệu
         function formatDateToDDMMYYYY(dateStr) {
-            if(!dateStr) return '';
+            if (!dateStr) return '';
             const parts = dateStr.split('-');
-            if(parts.length === 3) {
+            if (parts.length === 3) {
                 return `${parts[2]}/${parts[1]}/${parts[0]}`;
             }
             return '';
         }
 
-        // Hàm render dữ liệu ra bảng và cập nhật Dashboard dựa trên Bộ Lọc
+        // Hàm lọc và hiển thị dữ liệu lên bảng kèm theo cập nhật Dashboard thông số
         function renderData() {
             const searchValue = searchFilter.value.toLowerCase().trim();
             const dateValue = formatDateToDDMMYYYY(dateFilter.value);
 
-            // Tiến hành lọc dữ liệu
+            // Tiến hành lọc dữ liệu dựa trên từ khóa và ngày phân công
             const filteredData = globalDriverData.filter(item => {
                 const matchesSearch = item.name.toLowerCase().includes(searchValue) || 
                                       item.id.toLowerCase().includes(searchValue) || 
@@ -197,23 +230,22 @@
                 return matchesSearch && matchesDate;
             });
 
-            // Tính toán số liệu thống kê dựa trên dữ liệu đã lọc
+            // Khởi tạo biến tính tổng thông số
             let totalRevenue = 0;
             let totalTrips = 0;
             let uniqueDrivers = new Set();
 
-            // Xóa bảng cũ để render bảng mới
+            // Xóa trắng bảng cũ để nạp dòng mới
             dataTableBody.innerHTML = '';
 
             if (filteredData.length === 0) {
                 dataTableBody.innerHTML = `
                     <tr>
                         <td colspan="8" class="p-8 text-center text-gray-400">
-                            Không tìm thấy dữ liệu nào phù hợp với bộ lọc hiện tại.
+                            Không tìm thấy dữ liệu phù hợp với điều kiện tìm kiếm/bộ lọc.
                         </td>
                     </tr>`;
             } else {
-                // Đổ dữ liệu vào bảng
                 filteredData.forEach((item, index) => {
                     totalRevenue += item.revenue;
                     totalTrips += item.trips;
@@ -235,27 +267,27 @@
                 });
             }
 
-            // Cập nhật các ô số liệu tổng quan (Dashboard)
+            // Cập nhật số liệu hiển thị lên Dashboard Realtime
             statRevenue.textContent = formatVND(totalRevenue);
             statTrips.textContent = totalTrips.toLocaleString('vi-VN');
             statDrivers.textContent = uniqueDrivers.size.toLocaleString('vi-VN');
             statRows.textContent = filteredData.length.toLocaleString('vi-VN');
         }
 
-        // Lắng nghe sự kiện gõ tìm kiếm và chọn ngày để tự động lọc trực tiếp
+        // Lắng nghe các thay đổi trên ô bộ lọc để cập nhật trực tiếp bảng dữ liệu
         searchFilter.addEventListener('input', renderData);
         dateFilter.addEventListener('change', renderData);
 
-        // Nút xóa bộ lọc
+        // Nút Xóa bộ lọc đưa các ô tìm kiếm về trạng thái trống ban đầu
         resetFilterBtn.addEventListener('click', function() {
             searchFilter.value = '';
             dateFilter.value = '';
             renderData();
         });
 
-        // Nút xóa sạch toàn bộ dữ liệu hệ thống
+        // Nút Xóa sạch toàn bộ dữ liệu đã import
         clearBtn.addEventListener('click', function() {
-            if(confirm("Bạn có chắc chắn muốn xóa toàn bộ dữ liệu đã import không?")) {
+            if (confirm("Bạn có chắc chắn muốn xóa toàn bộ dữ liệu Excel đã nạp cộng dồn không?")) {
                 globalDriverData = [];
                 renderData();
             }
