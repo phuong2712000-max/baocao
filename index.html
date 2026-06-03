@@ -3,536 +3,571 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Báo Cáo Doanh Thu Vận Hành Toàn Diện</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Phần Mềm Quản Lý Doanh Thu Taxi</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f6f8fa; }
-        .tab-active { border-bottom: 3px solid #10b981; color: #10b981; font-weight: 600; }
-        .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #18bc9c;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-bg: #f8f9fa;
+            --dark-text: #2c3e50;
+            --border-color: #dce4ec;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #eef2f5;
+            color: var(--dark-text);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), #34495e);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .main-layout {
+            display: block;
+        }
+        
+        @media (min-width: 992px) {
+            .main-layout {
+                display: table;
+                width: 100%;
+                table-layout: fixed;
+                border-collapse: separate;
+                border-spacing: 20px 0;
+                margin-left: -20px;
+                margin-right: -20px;
+            }
+            .left-column {
+                display: table-cell;
+                width: 33.33%;
+                vertical-align: top;
+            }
+            .right-column {
+                display: table-cell;
+                width: 66.67%;
+                vertical-align: top;
+            }
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--light-bg);
+            color: var(--primary-color);
+        }
+
+        /* Thống kê nhanh */
+        .dashboard-stats {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: separate;
+            border-spacing: 15px 0;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            display: table-cell;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 5px solid var(--secondary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .stat-box.total { border-left-color: var(--warning-color); }
+        .stat-box h3 { font-size: 13px; text-transform: uppercase; color: #7f8c8d; margin-bottom: 5px; }
+        .stat-box p { font-size: 18px; font-weight: bold; color: var(--primary-color); }
+
+        /* Form nhập liệu */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .form-control:focus {
+            border-color: var(--secondary-color);
+        }
+
+        /* Nút bấm */
+        .btn {
+            display: inline-block;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        .btn-primary { background-color: var(--secondary-color); color: white; width: 100%; }
+        .btn-primary:hover { background-color: #149a80; }
+        .btn-excel { background-color: #27ae60; color: white; }
+        .btn-excel:hover { background-color: #219653; }
+        .btn-cancel { background-color: #95a5a6; color: white; margin-top: 5px; width: 100%; }
+        .btn-action { padding: 4px 8px; font-size: 12px; margin-right: 3px; border-radius: 3px; color: white;}
+        .btn-edit { background-color: var(--warning-color); }
+        .btn-delete { background-color: var(--danger-color); }
+
+        /* Bộ lọc */
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: flex-end;
+        }
+        .filter-item {
+            flex: 1;
+            min-width: 150px;
+        }
+        .filter-item label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #7f8c8d;
+        }
+
+        /* Bảng dữ liệu */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 12px 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            background-color: var(--light-bg);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        tr:hover { background-color: #fcfcfc; }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .text-right { text-align: right; }
+        .no-data { text-align: center; padding: 30px; color: #7f8c8d; font-style: italic; }
     </style>
 </head>
-<body class="p-4 text-gray-700 text-xs md:text-sm">
+<body>
 
-    <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-3 items-center justify-between mb-3">
-        <div class="flex flex-wrap gap-2 items-center text-xs">
-            <span class="font-medium text-gray-500">Chế độ:</span>
-            <button id="btnModeDay" onclick="toggleTimeMode('day')" class="px-3 py-1.5 border border-emerald-500 bg-emerald-50 text-emerald-600 rounded-lg flex items-center gap-1 font-medium transition">
-                <i class="fa-regular fa-calendar"></i> Theo ngày
-            </button>
-            <button id="btnModeRange" onclick="toggleTimeMode('range')" class="px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg flex items-center gap-1 hover:bg-gray-50 transition">
-                <i class="fa-regular fa-calendar-days"></i> Khoảng thời gian
-            </button>
-            
-            <div class="flex items-center gap-1.5 ml-2">
-                <span class="text-gray-400">Từ</span>
-                <input type="date" id="startDate" value="2026-06-02" onchange="onDateFilterChange()" class="border p-1 rounded-lg focus:outline-emerald-500 bg-gray-50 font-medium">
-                <span id="lblRangeEnd" class="text-gray-400 hidden">→ Đến</span>
-                <input type="date" id="endDate" value="2026-06-02" onchange="onDateFilterChange()" class="border p-1 rounded-lg focus:outline-emerald-500 bg-gray-50 font-medium hidden">
+<div class="container">
+    <header>
+        <h1>HỆ THỐNG QUẢN LÝ & SO SÁNH DOANH THU TAXI</h1>
+        <p>Theo dõi tài xế, phân chia tổ nhóm, bộ lọc nâng cao và báo cáo trực quan</p>
+    </header>
+
+    <div class="dashboard-stats">
+        <div class="stat-box">
+            <h3>Tổ Doanh Thu Cao Nhất</h3>
+            <p id="top-group">-</p>
+        </div>
+        <div class="stat-box total">
+            <h3>Tổng Doanh Thu Hệ Thống</h3>
+            <p id="grand-total">0 đ</p>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <div class="left-column">
+            <div class="card">
+                <div class="card-title" id="form-title">Nhập Dữ Liệu Doanh Thu</div>
+                <form id="revenue-form">
+                    <input type="hidden" id="edit-index">
+                    <div class="form-group">
+                        <label>Họ tên tài xế</label>
+                        <input type="text" id="driver-name" class="form-control" placeholder="Ví dụ: Nguyễn Văn A" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Số xe (Biển kiểm soát)</label>
+                        <input type="text" id="car-number" class="form-control" placeholder="Ví dụ: 30A-12345" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Thuộc Tổ</label>
+                        <select id="driver-group" class="form-control" required>
+                            <option value="Tổ 1">Tổ 1</option>
+                            <option value="Tổ 2">Tổ 2</option>
+                            <option value="Tổ 3">Tổ 3</option>
+                            <option value="Tổ 4">Tổ 4</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Doanh thu trong ngày (VND)</label>
+                        <input type="number" id="revenue-amount" class="form-control" placeholder="Ví dụ: 1500000" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Ngày thực hiện</label>
+                        <input type="date" id="revenue-date" class="form-control" required>
+                    </div>
+                    <button type="submit" id="btn-submit" class="btn btn-primary">Lưu dữ liệu</button>
+                    <button type="button" id="btn-cancel" class="btn btn-cancel" style="display: none;">Hủy cập nhật</button>
+                </form>
             </div>
-            
-            <button onclick="onDateFilterChange()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg font-medium shadow-sm transition ml-1">Xem báo cáo</button>
-            
-            <div class="h-4 w-[1px] bg-gray-200 mx-1"></div>
-            <button onclick="setFastDate('02')" class="px-2.5 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">Ngày 02/06</button>
-            <button onclick="setFastDate('all')" class="px-2.5 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">Toàn bộ kỳ</button>
+
+            <div class="card">
+                <div class="card-title">So Sánh Doanh Thu Giữa Các Tổ</div>
+                <div class="chart-container">
+                    <canvas id="groupChart"></canvas>
+                </div>
+            </div>
         </div>
-        <div class="text-emerald-600 font-semibold text-xs md:text-sm" id="dateDisplayRange">
-            02/06/2026 → 02/06/2026 <span class="text-gray-400 font-normal">(1 ngày)</span>
-        </div>
-    </div>
 
-    <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-3 items-center justify-between mb-3">
-        <div class="flex items-center gap-2 flex-1 max-w-md relative">
-            <i class="fa-solid fa-magnifying-glass absolute left-3 text-gray-400"></i>
-            <input type="text" id="searchDriver" placeholder="Tìm tài xế / nhân viên – nhập tên hoặc mã nhân viên..." oninput="renderActiveTab()" class="w-full pl-9 pr-4 py-1.5 border rounded-full bg-gray-50 focus:bg-white focus:outline-emerald-500 transition text-xs">
-        </div>
-        <div class="flex flex-wrap gap-1.5 text-xs">
-            <button class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium shadow-sm">Tất cả</button>
-            <button class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100 flex items-center gap-1"><i class="fa-solid fa-user-tie"></i> NV Công ty</button>
-            <button class="px-3 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-100 flex items-center gap-1"><i class="fa-solid fa-car"></i> TX RTO</button>
-        </div>
-    </div>
+        <div class="right-column">
+            <div class="card">
+                <div class="card-title">Bộ Lọc & Tìm Kiếm</div>
+                <div class="filter-row">
+                    <div class="filter-item">
+                        <label>Tìm tài xế / Số xe</label>
+                        <input type="text" id="search-keyword" class="form-control" placeholder="Nhập tên hoặc biển số...">
+                    </div>
+                    <div class="filter-item">
+                        <label>Lọc theo Tổ</label>
+                        <select id="filter-group" class="form-control">
+                            <option value="Tất cả">Tất cả các tổ</option>
+                            <option value="Tổ 1">Tổ 1</option>
+                            <option value="Tổ 2">Tổ 2</option>
+                            <option value="Tổ 3">Tổ 3</option>
+                            <option value="Tổ 4">Tổ 4</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label>Từ ngày</label>
+                        <input type="date" id="filter-from-date" class="form-control">
+                    </div>
+                    <div class="filter-item">
+                        <label>Đến ngày</label>
+                        <input type="date" id="filter-to-date" class="form-control">
+                    </div>
+                    <div>
+                        <button id="btn-export" class="btn btn-excel">Xuất Excel</button>
+                    </div>
+                </div>
+            </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-4 flex justify-between items-center px-4 overflow-x-auto custom-scrollbar">
-        <div class="flex gap-5 py-3 whitespace-nowrap text-xs md:text-sm">
-            <button onclick="switchTab(this, 'tong-hop')" class="flex items-center gap-1.5 text-gray-500 pb-1 hover:text-emerald-500"><i class="fa-solid fa-chart-pie"></i> Bảng tổng hợp kỳ</button>
-            <button onclick="switchTab(this, 'so-sanh')" class="flex items-center gap-1.5 text-gray-500 pb-1 tab-active"><i class="fa-solid fa-users-viewfinder"></i> So sánh tổ</button>
-            <button onclick="switchTab(this, 'tong-quan')" class="flex items-center gap-1.5 text-gray-500 pb-1 hover:text-emerald-500"><i class="fa-solid fa-eye"></i> Tổng quan</button>
-            <button onclick="switchTab(this, 'tai-xe')" class="flex items-center gap-1.5 text-gray-500 pb-1 hover:text-emerald-500"><i class="fa-solid fa-user"></i> Tài xế</button>
-            <button onclick="switchTab(this, 'xu-huong')" class="flex items-center gap-1.5 text-gray-500 pb-1 hover:text-emerald-500"><i class="fa-solid fa-arrow-trend-up"></i> Xu hướng</button>
-            <button onclick="switchTab(this, 'xep-hang')" class="flex items-center gap-1.5 text-gray-500 pb-1 hover:text-emerald-500"><i class="fa-solid fa-trophy"></i> Xếp hạng</button>
-            <button onclick="switchTab(this, 'canh-bao')" class="flex items-center gap-1.5 text-gray-500 pb-1 hover:text-emerald-500"><i class="fa-solid fa-triangle-exclamation"></i> Cảnh báo</button>
-            <button onclick="switchTab(this, 'phuong-tien')" class="flex items-center gap-1.5 text-gray-500 pb-1 hover:text-emerald-500"><i class="fa-solid fa-car-side"></i> Phương tiện</button>
-            <button onclick="switchTab(this, 'kpi')" class="flex items-center gap-1.5 text-gray-500 pb-1 hover:text-emerald-500"><i class="fa-solid fa-bullseye"></i> KPI</button>
-        </div>
-        
-        <div class="flex gap-2 items-center py-2 pl-4 whitespace-nowrap text-xs">
-            <button onclick="clearSystemData()" class="px-2.5 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 flex items-center gap-1 font-medium transition">
-                <i class="fa-solid fa-trash-can"></i> Xóa bộ nhớ
-            </button>
-            <label class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition font-medium shadow-sm">
-                <i class="fa-solid fa-file-excel text-sm"></i> Import dữ liệu
-                <input type="file" id="excelFile" accept=".xlsx, .xls" class="hidden" onchange="processExcelUpload(event)">
-            </label>
-        </div>
-    </div>
-
-    <div id="main-content-wrapper">
-        <div id="tab-so-sanh-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3"></div>
-
-        <div id="tab-dynamic-container" class="hidden bg-white p-4 rounded-xl shadow-sm border border-gray-100"></div>
-    </div>
-
-    <script>
-        const teamConfigs = {
-            "Tổ 01": { color: "border-emerald-600", text: "text-emerald-600", bar: "bg-emerald-600" },
-            "Tổ 02": { color: "border-blue-600", text: "text-blue-600", bar: "bg-blue-600" },
-            "Tổ 03": { color: "border-amber-500", text: "text-amber-500", bar: "bg-amber-500" },
-            "Tổ 04": { color: "border-purple-600", text: "text-purple-600", bar: "bg-purple-600" },
-            "Tổ 05": { color: "border-red-600", text: "text-red-600", bar: "bg-red-600" },
-            "Tổ 06": { color: "border-sky-500", text: "text-sky-500", bar: "bg-sky-500" }
-        };
-
-        let currentActiveTabId = "so-sanh";
-        let dateMode = "day"; 
-        let globalDatabase = {};
-
-        function initApplication() {
-            const cache = localStorage.getItem('fleet_master_db_v4');
-            if (cache) globalDatabase = JSON.parse(cache);
-            onDateFilterChange();
-        }
-
-        function toggleTimeMode(mode) {
-            dateMode = mode;
-            const btnDay = document.getElementById('btnModeDay');
-            const btnRange = document.getElementById('btnModeRange');
-            const lblEnd = document.getElementById('lblRangeEnd');
-            const inputEnd = document.getElementById('endDate');
-
-            if (mode === 'day') {
-                btnDay.className = "px-3 py-1.5 border border-emerald-500 bg-emerald-50 text-emerald-600 rounded-lg flex items-center gap-1 font-medium transition";
-                btnRange.className = "px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg flex items-center gap-1 hover:bg-gray-50 transition";
-                lblEnd.classList.add('hidden'); inputEnd.classList.add('hidden');
-            } else {
-                btnRange.className = "px-3 py-1.5 border border-emerald-500 bg-emerald-50 text-emerald-600 rounded-lg flex items-center gap-1 font-medium transition";
-                btnDay.className = "px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg flex items-center gap-1 hover:bg-gray-50 transition";
-                lblEnd.classList.remove('hidden'); inputEnd.classList.remove('hidden');
-            }
-            onDateFilterChange();
-        }
-
-        function onDateFilterChange() {
-            const startVal = document.getElementById('startDate').value;
-            let endVal = dateMode === 'day' ? startVal : document.getElementById('endDate').value;
-
-            const d1 = new Date(startVal); const d2 = new Date(endVal);
-            const totalDays = Math.ceil(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
-
-            document.getElementById('dateDisplayRange').innerHTML = 
-                `${startVal.split('-').reverse().join('/')} → ${endVal.split('-').reverse().join('/')} <span class="text-gray-400 font-normal">(${totalDays} ngày)</span>`;
-
-            renderActiveTab();
-        }
-
-        function calculatePeriodData() {
-            const startVal = document.getElementById('startDate').value;
-            let endVal = dateMode === 'day' ? startVal : document.getElementById('endDate').value;
-
-            let resultSummary = {};
-            Object.keys(teamConfigs).forEach(tName => {
-                resultSummary[tName] = { totalRevenue: 0, totalTrips: 0, driversMap: {}, activeDaysCount: 0 };
-            });
-
-            let curr = new Date(startVal);
-            let stop = new Date(endVal);
-
-            while(curr <= stop) {
-                let dStr = curr.toISOString().split('T')[0];
-                if (globalDatabase[dStr]) {
-                    Object.keys(teamConfigs).forEach(tName => {
-                        if (globalDatabase[dStr][tName]) {
-                            const dayTeam = globalDatabase[dStr][tName];
-                            resultSummary[tName].totalRevenue += dayTeam.revenue;
-                            resultSummary[tName].totalTrips += dayTeam.trips;
-                            resultSummary[tName].activeDaysCount++;
-
-                            Object.keys(dayTeam.drivers).forEach(matai => {
-                                const dr = dayTeam.drivers[matai];
-                                if (!resultSummary[tName].driversMap[matai]) {
-                                    resultSummary[tName].driversMap[matai] = { name: dr.name, rev: 0, trips: 0, models: {} };
-                                }
-                                resultSummary[tName].driversMap[matai].rev += dr.rev;
-                                resultSummary[tName].driversMap[matai].trips += dr.trips;
-                                if(dr.model) resultSummary[tName].driversMap[matai].models[dr.model] = (resultSummary[tName].driversMap[matai].models[dr.model] || 0) + 1;
-                            });
-                        }
-                    });
-                }
-                curr.setDate(curr.getDate() + 1);
-            }
-            return resultSummary;
-        }
-
-        function renderActiveTab() {
-            const calculatedData = calculatePeriodData();
-            const searchKeyword = document.getElementById('searchDriver').value.toLowerCase().trim();
-            const container = document.getElementById('tab-dynamic-container');
-
-            if (currentActiveTabId === 'so-sanh') {
-                document.getElementById('tab-so-sanh-grid').classList.remove('hidden');
-                container.classList.add('hidden');
-                renderSoSanhToView(calculatedData, searchKeyword);
-                return;
-            }
-
-            document.getElementById('tab-so-sanh-grid').classList.add('hidden');
-            container.classList.remove('hidden');
-
-            // Tính tổng tất cả các tổ để dùng chung cho các tab phân tích
-            let gTotalRev = 0, gTotalTrips = 0, allDrivers = [];
-            Object.keys(calculatedData).forEach(tName => {
-                gTotalRev += calculatedData[tName].totalRevenue;
-                gTotalTrips += calculatedData[tName].totalTrips;
-                Object.keys(calculatedData[tName].driversMap).forEach(code => {
-                    allDrivers.push({
-                        code: code,
-                        to: tName,
-                        ...calculatedData[tName].driversMap[code]
-                    });
-                });
-            });
-
-            if(searchKeyword) {
-                allDrivers = allDrivers.filter(d => d.name.toLowerCase().includes(searchKeyword) || d.code.toString().includes(searchKeyword));
-            }
-
-            // XỬ LÝ LOGIC CHI TIẾT TỪNG TAB
-            if (currentActiveTabId === 'tong-hop') {
-                let rows = '';
-                Object.keys(calculatedData).forEach(tName => {
-                    const item = calculatedData[tName];
-                    rows += `<tr class="border-b border-gray-100 hover:bg-gray-50">
-                        <td class="p-2.5 font-semibold text-gray-800">${tName}</td>
-                        <td class="p-2.5 text-right font-bold text-emerald-600">${item.totalRevenue.toFixed(2)}M</td>
-                        <td class="p-2.5 text-right">${item.totalTrips}</td>
-                        <td class="p-2.5 text-right font-medium">${Object.keys(item.driversMap).length} tài xế</td>
-                        <td class="p-2.5 text-right text-gray-500">${item.totalTrips > 0 ? ((item.totalRevenue * 1000000)/item.totalTrips).toFixed(0) : 0}đ</td>
-                    </tr>`;
-                });
-                container.innerHTML = `
-                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-table mr-2 text-emerald-500"></i>Bảng Tổng Hợp Doanh Thu Toàn Kỳ</h3>
-                    <table class="w-full text-left border-collapse">
+            <div class="card">
+                <div class="card-title">Danh Sách Chi Tiết Doanh Thu</div>
+                <div class="table-responsive">
+                    <table>
                         <thead>
-                            <tr class="bg-gray-50 text-gray-500 border-b border-gray-200">
-                                <th class="p-2">Tên Đội/Tổ</th><th class="p-2 text-right">Tổng Doanh Thu</th><th class="p-2 text-right">Số Cuốc Chuyến</th><th class="p-2 text-right">Số Nhân Sự Chạy</th><th class="p-2 text-right">Hiệu Suất/Cuốc</th>
+                            <tr>
+                                <th>Ngày</th>
+                                <th>Tổ</th>
+                                <th>Tài xế</th>
+                                <th>Số xe</th>
+                                <th class="text-right">Doanh thu</th>
+                                <th style="text-align: center; width: 120px;">Hành động</th>
                             </tr>
                         </thead>
-                        <tbody>${rows || '<tr><td colspan="5" class="text-center p-4 text-gray-400">Chưa có dữ liệu</td></tr>'}</tbody>
-                    </table>`;
-            } 
-            else if (currentActiveTabId === 'tong-quan') {
-                container.innerHTML = `
-                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-4"><i class="fa-solid fa-chart-line mr-2 text-emerald-500"></i>Chỉ Số Vận Hành Trọng Yếu (KPI Tổng Chi Nhánh)</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-xl">
-                            <span class="text-gray-500 block font-medium">Doanh Số Tổng Cộng</span>
-                            <span class="text-2xl font-black text-emerald-700">${gTotalRev.toFixed(2)}M</span>
-                        </div>
-                        <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl">
-                            <span class="text-gray-500 block font-medium">Tổng Số Cuốc Hoàn Thành</span>
-                            <span class="text-2xl font-black text-blue-700">${gTotalTrips} cuốc</span>
-                        </div>
-                        <div class="bg-purple-50 border border-purple-100 p-4 rounded-xl">
-                            <span class="text-gray-500 block font-medium">Tổng Nhân Sự Hoạt Động</span>
-                            <span class="text-2xl font-black text-purple-700">${allDrivers.length} nhân sự</span>
-                        </div>
-                    </div>`;
-            }
-            else if (currentActiveTabId === 'tai-xe') {
-                let rows = '';
-                allDrivers.sort((a,b) => b.rev - a.rev).forEach((d, idx) => {
-                    rows += `<tr class="border-b border-gray-100 text-xs hover:bg-gray-50">
-                        <td class="p-2 text-gray-400">${idx+1}</td>
-                        <td class="p-2 font-bold">${d.code}</td>
-                        <td class="p-2 font-medium text-gray-800">${d.name}</td>
-                        <td class="p-2 text-gray-500">${d.to}</td>
-                        <td class="p-2 text-right font-semibold text-emerald-600">${d.rev.toFixed(2)}M</td>
-                        <td class="p-2 text-right">${d.trips}</td>
-                    </tr>`;
-                });
-                container.innerHTML = `
-                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-user-group mr-2 text-emerald-500"></i>Danh Sách Tra Cứu Nhân Sự</h3>
-                    <div class="max-h-96 overflow-y-auto custom-scrollbar">
-                        <table class="w-full text-left">
-                            <thead class="sticky top-0 bg-gray-50 text-gray-500">
-                                <tr><th class="p-2">STT</th><th class="p-2">Mã Tài Xế</th><th class="p-2">Họ Tên</th><th class="p-2">Đội Quản Lý</th><th class="p-2 text-right">Doanh Số</th><th class="p-2 text-right">Cuốc Xe</th></tr>
-                            </thead>
-                            <tbody>${rows || '<tr><td colspan="6" class="text-center p-4">Không tìm thấy nhân viên nào</td></tr>'}</tbody>
-                        </table>
-                    </div>`;
-            }
-            else if (currentActiveTabId === 'xu-huong') {
-                let trendHtml = '';
-                Object.keys(globalDatabase).sort().forEach(date => {
-                    let dayTotal = 0;
-                    Object.keys(globalDatabase[date]).forEach(t => dayTotal += globalDatabase[date][t].revenue);
-                    let barWidth = Math.min(100, (dayTotal * 5));
-                    trendHtml += `
-                        <div class="flex items-center gap-3 text-xs">
-                            <span class="w-20 font-medium text-gray-600">${date.split('-').reverse().slice(0,2).join('/')}</span>
-                            <div class="flex-1 bg-gray-100 h-5 rounded-md overflow-hidden relative">
-                                <div class="bg-emerald-500 h-full transition-all" style="width: ${barWidth}%"></div>
-                                <span class="absolute left-2 top-0.5 text-[10px] font-bold text-gray-800">${dayTotal.toFixed(2)}M</span>
-                            </div>
-                        </div>`;
-                });
-                container.innerHTML = `
-                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-chart-column mr-2 text-emerald-500"></i>Biểu Đồ Biến Động Doanh Thu Theo Ngày</h3>
-                    <div class="space-y-2 p-2 bg-gray-50 rounded-xl">${trendHtml || '<p class="text-center p-4 text-gray-400">Hãy import thêm nhiều ngày để thấy đồ thị xu hướng</p>'}</div>`;
-            }
-            else if (currentActiveTabId === 'xep-hang') {
-                let topTeams = Object.keys(calculatedData).map(t => ({name: t, rev: calculatedData[t].totalRevenue}));
-                topTeams.sort((a,b) => b.rev - a.rev);
-                let rankingRows = '';
-                topTeams.forEach((t, i) => {
-                    let medal = i===0 ? '🥇' : (i===1 ? '🥈' : (i===2 ? '🥉' : i+1));
-                    rankingRows += `<div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
-                        <span class="font-bold">${medal} ${t.name}</span>
-                        <span class="font-extrabold text-emerald-600 text-sm">${t.rev.toFixed(2)}M</span>
-                    </div>`;
-                });
-                container.innerHTML = `
-                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-trophy mr-2 text-amber-500"></i>Bảng Xếp Hạng Doanh Thu Các Đội Đua Top</h3>
-                    <div class="space-y-2 max-w-md">${rankingRows || '<p class="text-gray-400">Chưa có bảng xếp hạng</p>'}</div>`;
-            }
-            else if (currentActiveTabId === 'canh-bao') {
-                let alerts = '';
-                allDrivers.forEach(d => {
-                    if(d.rev > 0 && d.rev < 0.3) { // Doanh thu thấp hơn 300K trong kỳ lọc
-                        alerts += `<div class="p-2.5 bg-rose-50 border border-rose-100 text-rose-800 rounded-lg flex justify-between items-center text-xs">
-                            <div><i class="fa-solid fa-triangle-exclamation mr-1"></i> Tài xế <span class="font-bold">${d.name} (${d.code})</span> thuộc <span class="font-medium">${d.to}</span> đạt hiệu suất thấp.</div>
-                            <span class="font-bold bg-rose-200 px-2 py-0.5 rounded">${d.rev.toFixed(2)}M</span>
-                        </div>`;
-                    }
-                });
-                container.innerHTML = `
-                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-bell mr-2 text-rose-500"></i>Cảnh Báo Nhân Sự Dưới Sàn Hiệu Suất (&lt;300K)</h3>
-                    <div class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">${alerts || '<div class="text-emerald-600 font-medium p-4 text-center bg-emerald-50 rounded-lg"><i class="fa-solid fa-circle-check mr-1"></i> Tuyệt vời! Không có tài xế nào bị cảnh báo hiệu suất thấp trong kỳ này.</div>'}</div>`;
-            }
-            else if (currentActiveTabId === 'phuong-tien') {
-                let totalModelTrips = {}, modelRevenue = {};
-                // Đếm dữ liệu phương tiện thô sơ từ file
-                allDrivers.forEach(d => {
-                    modelRevenue["Dòng Xe"] = (modelRevenue["Dòng Xe"] || 0) + d.rev;
-                    totalModelTrips["Dòng Xe"] = (totalModelTrips["Dòng Xe"] || 0) + d.trips;
-                });
-                container.innerHTML = `
-                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-car-side mr-2 text-blue-500"></i>Thống Kê Doanh Thu Theo Nhóm Phương Tiện</h3>
-                    <div class="p-4 bg-gray-50 rounded-xl max-w-sm flex justify-between items-center">
-                        <div>
-                            <span class="font-bold text-gray-800 text-sm block">Đội Xe Thuần Điện (VF)</span>
-                            <span class="text-xs text-gray-400">${gTotalTrips} chuyến đi an toàn</span>
-                        </div>
-                        <span class="text-base font-black text-blue-600">${gTotalRev.toFixed(2)}M</span>
-                    </div>`;
-            }
-            else if (currentActiveTabId === 'kpi') {
-                let targetKPI = 2.0; // Định mức thử nghiệm 2.0M mỗi tổ
-                let kpiHtml = '';
-                Object.keys(calculatedData).forEach(tName => {
-                    let rev = calculatedData[tName].totalRevenue;
-                    let pct = Math.min(100, (rev / targetKPI) * 100);
-                    let color = pct >= 100 ? 'bg-emerald-500' : (pct >= 50 ? 'bg-amber-500' : 'bg-red-500');
-                    kpiHtml += `<div class="space-y-1">
-                        <div class="flex justify-between text-xs font-medium">
-                            <span>${tName} (Chỉ tiêu: ${targetKPI}M)</span>
-                            <span class="font-bold">${pct.toFixed(1)}% đạt được</span>
-                        </div>
-                        <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
-                            <div class="${color} h-full transition-all" style="width: ${pct}%"></div>
-                        </div>
-                    </div>`;
-                });
-                container.innerHTML = `
-                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-bullseye mr-2 text-purple-500"></i>Tiến Độ Hoàn Thành Chỉ Tiêu Thử Nghiệm Kế Hoạch</h3>
-                    <div class="space-y-4 bg-gray-50 p-4 rounded-xl">${kpiHtml}</div>`;
-            }
+                        <tbody id="data-rows"></tbody>
+                    </table>
+                </div>
+                <div id="no-data-msg" class="no-data" style="display: none;">Chưa có dữ liệu nào phù hợp với bộ lọc.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let taxiData = JSON.parse(localStorage.getItem('taxi_revenue_data')) || [];
+    let myChart = null;
+
+    document.getElementById('revenue-date').value = new Date().toISOString().split('T')[0];
+
+    function formatVND(amount) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    }
+
+    function formatDateVN(dateString) {
+        if (!dateString) return '';
+        const parts = dateString.split('-');
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    document.getElementById('revenue-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('driver-name').value.trim();
+        const car = document.getElementById('car-number').value.trim().toUpperCase();
+        const group = document.getElementById('driver-group').value;
+        const revenue = parseFloat(document.getElementById('revenue-amount').value);
+        const date = document.getElementById('revenue-date').value;
+        const editIndex = document.getElementById('edit-index').value;
+
+        const entry = { name, car, group, revenue, date };
+
+        if (editIndex === "") {
+            taxiData.push(entry);
+        } else {
+            taxiData[parseInt(editIndex)] = entry;
+            resetFormMode();
         }
 
-        function renderSoSanhToView(aggregatedData, searchKeyword) {
-            const grid = document.getElementById('tab-so-sanh-grid');
-            grid.innerHTML = '';
+        saveAndRender();
+        document.getElementById('driver-name').value = '';
+        document.getElementById('car-number').value = '';
+        document.getElementById('revenue-amount').value = '';
+    });
 
-            Object.keys(aggregatedData).forEach(tName => {
-                const item = aggregatedData[tName]; const conf = teamConfigs[tName];
+    function saveAndRender() {
+        localStorage.setItem('taxi_revenue_data', JSON.stringify(taxiData));
+        renderData();
+    }
 
-                let driverArray = Object.keys(item.driversMap).map(id => ({
-                    code: id, name: item.driversMap[id].name, rev: item.driversMap[id].rev, trips: item.driversMap[id].trips
-                }));
+    function getFilteredData() {
+        const keyword = document.getElementById('search-keyword').value.toLowerCase();
+        const groupFilter = document.getElementById('filter-group').value;
+        const fromDate = document.getElementById('filter-from-date').value;
+        const toDate = document.getElementById('filter-to-date').value;
 
-                let filteredDrivers = driverArray.filter(d => d.name.toLowerCase().includes(searchKeyword) || d.code.toString().includes(searchKeyword));
-                filteredDrivers.sort((a, b) => b.rev - a.rev);
-                let displayTopDrivers = filteredDrivers.slice(0, 4);
+        return taxiData.map((item, index) => ({ ...item, originalIndex: index }))
+            .filter(item => {
+                const matchesKeyword = item.name.toLowerCase().includes(keyword) || item.car.toLowerCase().includes(keyword);
+                const matchesGroup = (groupFilter === 'Tất cả') || (item.group === groupFilter);
+                const matchesFromDate = !fromDate || (item.date >= fromDate);
+                const matchesToDate = !toDate || (item.date <= toDate);
+                return matchesKeyword && matchesGroup && matchesFromDate && matchesToDate;
+            });
+    }
 
-                let driverListHtml = '';
-                displayTopDrivers.forEach(d => {
-                    driverListHtml += `
-                        <div class="flex justify-between items-center py-1 border-b border-gray-50 hover:bg-gray-50 transition">
-                            <div class="truncate max-w-[125px]">
-                                <span class="text-gray-800 font-medium block truncate">${d.name}</span>
-                                <span class="text-gray-400 text-[10px] block">${d.code}</span>
-                            </div>
-                            <div class="text-right">
-                                <span class="${conf.text} font-bold">${d.rev.toFixed(2)}M</span>
-                                <span class="text-[9px] text-gray-400 block">${d.trips} cuốc</span>
-                            </div>
-                        </div>`;
-                });
+    function renderData() {
+        const filtered = getFilteredData();
+        const tbody = document.getElementById('data-rows');
+        const noDataMsg = document.getElementById('no-data-msg');
+        
+        tbody.innerHTML = '';
 
-                const countActiveDrivers = driverArray.length;
-                const daysDivisor = Math.max(1, item.activeDaysCount / 6);
-                const avgDayPerDriver = countActiveDrivers > 0 ? ((item.totalRevenue * 1000000) / countActiveDrivers / daysDivisor) : 0;
-                const avgPeriodPerDriver = countActiveDrivers > 0 ? (item.totalRevenue / countActiveDrivers) : 0;
-                const avgDayStr = avgDayPerDriver >= 1000 ? (avgDayPerDriver / 1000).toFixed(0) + "K" : avgDayPerDriver.toFixed(0);
+        if (filtered.length === 0) {
+            noDataMsg.style.display = 'block';
+        } else {
+            noDataMsg.style.display = 'none';
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-                grid.innerHTML += `
-                    <div class="bg-white rounded-xl shadow-sm border-t-4 ${conf.color} border-x border-b border-gray-200 flex flex-col justify-between p-3 transition transform hover:-translate-y-0.5">
-                        <div>
-                            <div class="flex justify-between items-center mb-2.5">
-                                <h3 class="font-bold text-sm md:text-base ${conf.text}">${tName}</h3>
-                                <span class="text-[10px] text-gray-500 bg-gray-100 font-medium px-2 py-0.5 rounded-md">${countActiveDrivers} TX chạy</span>
-                            </div>
-                            <div class="space-y-1.5 text-xs text-gray-500 mb-2.5">
-                                <div class="flex justify-between"><span>Tổng DT kỳ</span><span class="font-bold text-gray-900 text-sm">${item.totalRevenue.toFixed(2)}M</span></div>
-                                <div class="flex justify-between pt-1 border-t border-dashed border-gray-100"><span>TB DT/TX/ngày</span><span class="font-bold text-gray-800">${avgDayStr}</span></div>
-                                <div class="flex justify-between"><span>TB DT/TX cả kỳ</span><span class="font-bold text-gray-800">${avgPeriodPerDriver.toFixed(2)}M</span></div>
-                            </div>
-                            <div class="h-[2px] w-full ${conf.bar} opacity-60 mb-2.5"></div>
-                            <div class="space-y-1">${driverListHtml || '<p class="text-gray-400 text-center py-4 text-xs">Không tìm thấy tài xế</p>'}</div>
-                        </div>
-                    </div>`;
+            filtered.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${formatDateVN(item.date)}</td>
+                    <td><span style="font-weight:600; color:#34495e;">${item.group}</span></td>
+                    <td>${item.name}</td>
+                    <td><code style="background:#dee2e6; padding:2px 6px; border-radius:4px; font-weight:bold;">${item.car}</code></td>
+                    <td class="text-right" style="font-weight:600; color:#2c3e50;">${formatVND(item.revenue)}</td>
+                    <td style="text-align: center;">
+                        <button class="btn btn-action btn-edit" onclick="editEntry(${item.originalIndex})">Sửa</button>
+                        <button class="btn btn-action btn-delete" onclick="deleteEntry(${item.originalIndex})">Xóa</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
             });
         }
+        calculateStats(filtered);
+    }
 
-        function processExcelUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+    function calculateStats(currentData) {
+        let grandTotal = 0;
+        const groupTotals = { 'Tổ 1': 0, 'Tổ 2': 0, 'Tổ 3': 0, 'Tổ 4': 0 };
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rawJsonRows = XLSX.utils.sheet_to_json(worksheet);
+        currentData.forEach(item => {
+            grandTotal += item.revenue;
+            if (groupTotals[item.group] !== undefined) {
+                groupTotals[item.group] += item.revenue;
+            }
+        });
 
-                if (rawJsonRows.length === 0) return alert("File Excel trống dữ liệu!");
+        document.getElementById('grand-total').innerText = formatVND(grandTotal);
 
-                let parseSuccessCount = 0;
-                rawJsonRows.forEach(row => {
-                    let origDate = row["Ngày phân công"] || row["Ngay"] || row["Bắt đầu ca"];
-                    if (!origDate) return;
+        let topGroup = '-';
+        let maxRevenue = 0;
+        for (const [group, total] of Object.entries(groupTotals)) {
+            if (total > maxRevenue) {
+                maxRevenue = total;
+                topGroup = `${group} (${formatVND(total)})`;
+            }
+        }
+        document.getElementById('top-group').innerText = maxRevenue > 0 ? topGroup : 'Chưa có dữ liệu';
 
-                    let targetDateKey = "";
-                    let dStr = origDate.toString().trim().split(" ")[0];
-                    let parts = dStr.split("/");
-                    
-                    if (parts.length === 3) {
-                        targetDateKey = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
-                    } else {
-                        let dashParts = dStr.split("-");
-                        if (dashParts.length === 3) {
-                            targetDateKey = dashParts[0].length === 4 ? dStr : `${dashParts[2]}-${dashParts[1].padStart(2,'0')}-${dashParts[0].padStart(2,'0')}`;
-                        }
-                    }
+        updateChart(groupTotals);
+    }
 
-                    if (!targetDateKey || targetDateKey.includes("undefined")) return;
+    function updateChart(groupData) {
+        const labels = Object.keys(groupData);
+        const dataValues = Object.values(groupData);
 
-                    let origTo = row["Tổ"] || row["To"]; if (!origTo) return;
-                    let toKeyName = "";
-                    let splitParts = origTo.toString().split(".");
-                    if (splitParts.length > 0) {
-                        let lastChunk = splitParts[splitParts.length - 1];
-                        let numMatch = lastChunk.match(/(\d+)/);
-                        if (numMatch) toKeyName = "Tổ " + numMatch[1].padStart(2, '0');
-                    }
-
-                    if (!toKeyName || !teamConfigs[toKeyName]) return;
-
-                    let origRevenue = row["Doanh số"] || row["Tổng giá trị cước xe hoàn thành"] || 0;
-                    let numRevenue = parseFloat(origRevenue.toString().replace(/[^0-9.-]/g, '')) || 0;
-                    let convertedMillion = numRevenue / 1000000;
-
-                    let driverCode = row["Mã tài xế"] || row["Mã tài"];
-                    let driverName = row["Tên tài xế"] || "Tài xế ẩn";
-                    let countTrips = parseInt(row["Số cuốc xe hoàn thành"] || row["Số cuốc xe"]) || 0;
-
-                    if (!driverCode) return;
-
-                    if (!globalDatabase[targetDateKey]) globalDatabase[targetDateKey] = {};
-                    if (!globalDatabase[targetDateKey][toKeyName]) {
-                        globalDatabase[targetDateKey][toKeyName] = { revenue: 0, trips: 0, drivers: {} };
-                    }
-
-                    globalDatabase[targetDateKey][toKeyName].revenue += convertedMillion;
-                    globalDatabase[targetDateKey][toKeyName].trips += countTrips;
-
-                    if (!globalDatabase[targetDateKey][toKeyName].drivers[driverCode]) {
-                        globalDatabase[targetDateKey][toKeyName].drivers[driverCode] = { name: driverName, rev: 0, trips: 0, model: row["Model"] };
-                    }
-                    globalDatabase[targetDateKey][toKeyName].drivers[driverCode].rev += convertedMillion;
-                    globalDatabase[targetDateKey][toKeyName].drivers[driverCode].trips += countTrips;
-                    parseSuccessCount++;
-                });
-
-                localStorage.setItem('fleet_master_db_v4', JSON.stringify(globalDatabase));
-                
-                if (rawJsonRows.length > 0) {
-                    let firstRowDate = rawJsonRows[0]["Ngày phân công"] || rawJsonRows[0]["Bắt đầu ca"];
-                    if (firstRowDate) {
-                        let bits = firstRowDate.toString().trim().split(" ")[0].split("/");
-                        if(bits.length === 3) {
-                            let extractedDate = `${bits[2]}-${bits[1].padStart(2,'0')}-${bits[0].padStart(2,'0')}`;
-                            document.getElementById('startDate').value = extractedDate;
-                            document.getElementById('endDate').value = extractedDate;
+        if (myChart) {
+            myChart.data.datasets[0].data = dataValues;
+            myChart.update();
+        } else {
+            const ctx = document.getElementById('groupChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Doanh thu (VND)',
+                        data: dataValues,
+                        backgroundColor: [
+                            'rgba(24, 188, 156, 0.7)',
+                            'rgba(52, 152, 219, 0.7)',
+                            'rgba(155, 89, 182, 0.7)',
+                            'rgba(241, 196, 15, 0.7)'
+                        ],
+                        borderColor: ['#18bc9c', '#3498db', '#9b59b6', '#f1c40f'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: function(val) { return val.toLocaleString('vi-VN') + ' đ'; } }
                         }
                     }
                 }
-                onDateFilterChange();
-                alert(`Import thành công! Đã xử lý và lưu trữ dữ liệu của ${parseSuccessCount} chuyến xe vào hệ thống.`);
-                event.target.value = '';
-            };
-            reader.readAsArrayBuffer(file);
+            });
+        }
+    }
+
+    window.editEntry = function(index) {
+        const item = taxiData[index];
+        document.getElementById('driver-name').value = item.name;
+        document.getElementById('car-number').value = item.car;
+        document.getElementById('driver-group').value = item.group;
+        document.getElementById('revenue-amount').value = item.revenue;
+        document.getElementById('revenue-date').value = item.date;
+        document.getElementById('edit-index').value = index;
+
+        document.getElementById('form-title').innerText = "Chỉnh Sửa Dữ Liệu Doanh Thu";
+        document.getElementById('form-title').style.color = "var(--warning-color)";
+        document.getElementById('btn-submit').innerText = "Cập nhật dữ liệu";
+        document.getElementById('btn-submit').style.backgroundColor = "var(--warning-color)";
+        document.getElementById('btn-cancel').style.display = "block";
+        document.getElementById('revenue-form').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    function resetFormMode() {
+        document.getElementById('edit-index').value = "";
+        document.getElementById('form-title').innerText = "Nhập Dữ Liệu Doanh Thu";
+        document.getElementById('form-title').style.color = "var(--primary-color)";
+        document.getElementById('btn-submit').innerText = "Lưu dữ liệu";
+        document.getElementById('btn-submit').style.backgroundColor = "var(--secondary-color)";
+        document.getElementById('btn-cancel').style.display = "none";
+        document.getElementById('revenue-form').reset();
+        document.getElementById('revenue-date').value = new Date().toISOString().split('T')[0];
+    }
+
+    document.getElementById('btn-cancel').addEventListener('click', resetFormMode);
+
+    window.deleteEntry = function(index) {
+        if (confirm("Bạn có chắc chắn muốn xóa dữ liệu này?")) {
+            if (document.getElementById('edit-index').value == index) resetFormMode();
+            taxiData.splice(index, 1);
+            saveAndRender();
+        }
+    };
+
+    document.getElementById('search-keyword').addEventListener('input', renderData);
+    document.getElementById('filter-group').addEventListener('change', renderData);
+    document.getElementById('filter-from-date').addEventListener('change', renderData);
+    document.getElementById('filter-to-date').addEventListener('change', renderData);
+
+    document.getElementById('btn-export').addEventListener('click', function() {
+        const filtered = getFilteredData();
+        if (filtered.length === 0) {
+            alert("Không có dữ liệu để xuất file Excel!");
+            return;
         }
 
-        function switchTab(buttonElement, tabId) {
-            currentActiveTabId = tabId;
-            document.querySelectorAll('.tab-active').forEach(el => { el.classList.remove('tab-active'); el.classList.add('text-gray-500'); });
-            buttonElement.classList.add('tab-active'); buttonElement.classList.remove('text-gray-500');
-            renderActiveTab();
-        }
+        const excelRows = [
+            ["BÁO CÁO CHI TIẾT DOANH THU TAXI"],
+            [],
+            ["Ngày thực hiện", "Tổ hoạt động", "Họ tên tài xế", "Biển kiểm soát xe", "Doanh thu (VND)"]
+        ];
 
-        function setFastDate(type) {
-            if (type === '02') {
-                document.getElementById('startDate').value = "2026-06-02";
-                document.getElementById('endDate').value = "2026-06-02";
-            } else if (type === 'all') {
-                document.getElementById('startDate').value = "2026-05-01";
-                document.getElementById('endDate').value = "2026-06-30";
-            }
-            onDateFilterChange();
-        }
+        let totalRevenue = 0;
+        filtered.forEach(item => {
+            excelRows.push([formatDateVN(item.date), item.group, item.name, item.car, item.revenue]);
+            totalRevenue += item.revenue;
+        });
 
-        function clearSystemData() {
-            if (confirm("Xóa toàn bộ kho dữ liệu đã tích lũy?")) {
-                localStorage.removeItem('fleet_master_db_v4'); globalDatabase = {}; renderActiveTab();
-            }
-        }
+        excelRows.push([]);
+        excelRows.push(["", "", "", "TỔNG CỘNG DOANH THU:", totalRevenue]);
 
-        window.onload = initApplication;
-    </script>
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(excelRows);
+        XLSX.utils.book_append_sheet(wb, ws, "Doanh Thu Taxi");
+        XLSX.writeFile(wb, `Bao_cao_doanh_thu_taxi_${new Date().toISOString().split('T')[0]}.xlsx`);
+    });
+
+    renderData();
+</script>
 </body>
 </html>
