@@ -3,345 +3,375 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Doanh Số Các Tổ - GSM Tracking</title>
+    <title>Quản Lý Doanh Số GSM Các Tổ</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root {
-            --primary-color: #0056b3;
-            --secondary-color: #17a2b8;
-            --success-color: #28a745;
-            --danger-color: #dc3545;
-            --dark-color: #343a40;
-            --light-color: #f8f9fa;
+            --gsm-primary: #00b4d8;
+            --gsm-teal: #00a896;
+            --gsm-dark: #028090;
+            --bg-color: #f4f7f6;
+            --text-color: #2d3748;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #e9ecef;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
             margin: 0;
             padding: 20px;
-            color: #495057;
+            color: var(--text-color);
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: #fff;
-            padding: 30px;
+            background: #ffffff;
+            padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
         h1 {
-            text-align: center;
-            color: var(--dark-color);
-            margin-bottom: 5px;
-            font-size: 26px;
+            font-size: 24px;
+            color: var(--gsm-dark);
+            margin-top: 0;
+            margin-bottom: 20px;
             font-weight: 700;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #6c757d;
-            margin-bottom: 30px;
-        }
-
-        /* Khu vực điều khiển */
-        .control-panel {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            background: var(--light-color);
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-            margin-bottom: 30px;
-        }
-
-        .form-group {
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Thanh điều khiển ngang giống y hệt ảnh phối cảnh */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            background: #ffffff;
+            padding: 15px 0;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 25px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
             gap: 8px;
         }
 
-        .form-group label {
+        .filter-group label {
+            font-size: 14px;
             font-weight: 600;
-            color: var(--dark-color);
+            color: #4a5568;
+            white-space: nowrap;
         }
 
-        input[type="file"], select {
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            background-color: #fff;
+        input[type="date"], select, input[type="text"] {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
             font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            min-width: 160px;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--gsm-teal);
+        }
+
+        /* Nút bấm đồng bộ phong cách */
+        .btn-wrapper {
+            display: flex;
+            gap: 8px;
+            margin-left: auto; /* Đẩy cụm nút bấm về bên phải */
         }
 
         .btn {
-            padding: 11px 20px;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
+
+        .btn-upload {
+            background-color: var(--gsm-teal);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-upload input[type="file"] {
+            position: absolute;
+            left: 0; top: 0; opacity: 0;
+            cursor: pointer; height: 100%; width: 100%;
+        }
+
+        .btn-upload:hover { background-color: #02c39a; }
 
         .btn-danger {
-            background-color: var(--danger-color);
+            background-color: #fff1f0;
+            color: #e53e3e;
+            border: 1px solid #ffa39e;
+        }
+
+        .btn-danger:hover {
+            background-color: #e53e3e;
             color: white;
-            align-self: flex-end;
         }
 
-        .btn-danger:hover { background-color: #bd2130; }
-
-        /* Khối thống kê tổng quan */
-        .dashboard-stats {
+        /* Khối hiển thị các con số tổng số chỉ số */
+        .summary-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
-        .stat-card {
-            background: #fff;
-            padding: 20px;
+        .card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 18px;
             border-radius: 8px;
-            border-top: 4px solid var(--primary-color);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.03);
-            text-align: center;
+            text-align: left;
         }
 
-        .stat-card.sales { border-top-color: var(--success-color); }
-        .stat-card.trips { border-top-color: var(--secondary-color); }
-
-        .stat-card h3 {
-            margin: 0 0 10px 0;
-            font-size: 14px;
-            color: #6c757d;
+        .card h3 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            color: #718096;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        .stat-card p {
-            margin: 0;
-            font-size: 24px;
+        .card .value {
+            font-size: 22px;
             font-weight: 700;
-            color: var(--dark-color);
+            color: var(--gsm-dark);
         }
 
-        /* Bảng dữ liệu */
-        .table-responsive {
+        /* Giao diện Bảng hiển thị dữ liệu */
+        .table-container {
             overflow-x: auto;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
-            border: 1px solid #dee2e6;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            background: #fff;
-        }
-
-        th, td {
-            padding: 14px 16px;
             text-align: left;
-            border-bottom: 1px solid #dee2e6;
-            font-size: 15px;
         }
 
         th {
-            background-color: var(--dark-color);
-            color: white;
+            background-color: #f1f5f9;
+            color: #4a5568;
             font-weight: 600;
-            position: sticky;
-            top: 0;
+            padding: 12px 16px;
+            font-size: 14px;
+            border-bottom: 2px solid #e2e8f0;
         }
 
-        tr:last-child td { border-bottom: none; }
-        tr:hover { background-color: #f1f3f5; }
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #edf2f7;
+            font-size: 14px;
+            color: #2d3748;
+        }
+
+        tr:hover td {
+            background-color: #f8fafc;
+        }
 
         .text-right { text-align: right; }
         .text-center { text-align: center; }
-        
+
         .no-data {
             text-align: center;
             padding: 40px;
-            color: #6c757d;
+            color: #a0aec0;
             font-style: italic;
-            background: #fff;
         }
 
-        @media (max-width: 768px) {
-            .control-panel { grid-template-columns: 1fr; }
-            .btn-danger { align-self: stretch; }
+        @media (max-width: 900px) {
+            .filter-bar { flex-direction: column; align-items: flex-start; }
+            .btn-wrapper { margin-left: 0; width: 100%; justify-content: flex-start; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Hệ Thống Quản Lý Doanh Số Theo Tổ</h1>
-    <p class="subtitle">Hỗ trợ import dữ liệu đối soát GSM, tự động tích lũy và lọc báo cáo theo ngày</p>
+    <h1>📊 Quản Lý Doanh Số Các Tổ Hoạt Động</h1>
 
-    <div class="control-panel">
-        <div class="form-group">
-            <label for="excelFile">Tải lên file Excel mới (Cộng dồn):</label>
-            <input type="file" id="excelFile" accept=".xlsx, .xls" />
-        </div>
-        
-        <div class="form-group">
-            <label for="dateFilter">Lọc theo ngày phân công:</label>
-            <select id="dateFilter" onchange="renderData()">
-                <option value="all">-- Tất cả các ngày --</option>
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Lọc theo ngày:</label>
+            <select id="dateSelect" onchange="renderData()">
+                <option value="all">-- Tất cả ngày --</option>
             </select>
         </div>
 
-        <div class="form-group" style="justify-content: flex-end;">
-            <button class="btn btn-danger" onclick="clearAllData()">Xóa toàn bộ dữ liệu hệ thống</button>
+        <div class="filter-group">
+            <label>Tìm kiếm tổ:</label>
+            <input type="text" id="searchTeam" placeholder="Nhập tên tổ cần tìm..." oninput="renderData()" />
+        </div>
+
+        <div class="btn-wrapper">
+            <button class="btn btn-upload">
+                📥 Import Excel Cộng Dồn
+                <input type="file" id="excelFile" accept=".xlsx, .xls" />
+            </button>
+            <button class="btn btn-danger" onclick="clearData()">🗑️ Xóa toàn bộ dữ liệu</button>
         </div>
     </div>
 
-    <div class="dashboard-stats">
-        <div class="stat-card">
+    <div class="summary-cards">
+        <div class="card">
             <h3>Tổng số tổ hoạt động</h3>
-            <p id="statTotalTeams">0</p>
+            <div class="value" id="totalTeams">0</div>
         </div>
-        <div class="stat-card sales">
-            <h3>Doanh số thu về</h3>
-            <p id="statGrandTotalSales">0 đ</p>
-        </div>
-        <div class="stat-card trips">
+        <div class="card">
             <h3>Tổng số cuốc hoàn thành</h3>
-            <p id="statTotalTrips">0</p>
+            <div class="value" id="totalTrips">0</div>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--gsm-teal);">
+            <h3>Tổng doanh số thu về</h3>
+            <div class="value" style="color: var(--gsm-teal);" id="totalSales">0 đ</div>
         </div>
     </div>
 
-    <div class="table-responsive">
+    <div class="table-container">
         <table>
             <thead>
                 <tr>
                     <th style="width: 60px;" class="text-center">STT</th>
                     <th>Tên Tổ / Khu Vực</th>
                     <th class="text-center">Số lượng tài xế</th>
-                    <th class="text-right">Tổng số cuốc</th>
-                    <th class="text-right">Tổng doanh số</th>
+                    <th class="text-right">Tổng số cuốc chạy</th>
+                    <th class="text-right">Tổng doanh số tích lũy</th>
                 </tr>
             </thead>
             <tbody id="dataTableBody">
                 </tbody>
         </table>
-        <div id="noDataMessage" class="no-data">Hệ thống chưa có dữ liệu. Vui lòng import file Excel để bắt đầu.</div>
+        <div id="noDataText" class="no-data">Hệ thống trống. Hãy nhấn nút "Import Excel" phía trên để nạp dữ liệu.</div>
     </div>
 </div>
 
 <script>
-    // Cấu trúc lưu trữ dữ liệu dạng mảng để dễ lọc ngày tháng: 
-    // [{ khuVuc: 'HAIBATRUNG', ngay: '02/06/2026', doanhSo: 1200000, cuocXe: 10, taiXe: 'Mã TX' }]
-    let rawDatabase = JSON.parse(localStorage.getItem('gsm_sales_database')) || [];
+    // Khởi tạo cơ sở dữ liệu từ bộ nhớ trình duyệt localStorage (Đảm bảo reload / F5 không mất)
+    let gsmDatabase = JSON.parse(localStorage.getItem('gsm_master_db')) || [];
 
-    // Hàm định dạng tiền tệ VND
-    function formatVND(amount) {
+    // Hàm format số tiền VND thân thiện
+    function formatMoney(amount) {
         return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
     }
 
-    // Tự động tìm và cập nhật danh sách các Ngày vào Bộ lọc (Dropdown)
-    function updateDateFilterDropdown() {
-        const dateFilter = document.getElementById('dateFilter');
-        const currentSelected = dateFilter.value;
+    // Cập nhật danh sách các Ngày vào ô chọn lọc Dropdown
+    function populateDateDropdown() {
+        const dateSelect = document.getElementById('dateSelect');
+        const prevValue = dateSelect.value;
         
-        // Lấy danh sách ngày không trùng lặp
-        const dates = [...new Set(rawDatabase.map(item => item.ngay))];
-        // Sắp xếp ngày tăng dần (tạm thời sắp xếp theo chuỗi tiêu chuẩn)
-        dates.sort();
+        // Lấy danh sách ngày duy nhất
+        const uniqueDates = [...new Set(gsmDatabase.map(item => item.ngay))].sort();
 
-        // Xóa các option cũ trừ option "Tất cả ngày"
-        dateFilter.innerHTML = '<option value="all">-- Tất cả các ngày --</option>';
-        
-        dates.forEach(date => {
-            const option = document.createElement('option');
-            option.value = date;
-            option.innerText = date;
-            dateFilter.appendChild(option);
+        dateSelect.innerHTML = '<option value="all">-- Tất cả ngày --</option>';
+        uniqueDates.forEach(date => {
+            const opt = document.createElement('option');
+            opt.value = date;
+            opt.innerText = date;
+            dateSelect.appendChild(opt);
         });
 
-        // Giữ lại lựa chọn cũ nếu nó vẫn tồn tại
-        if (dates.includes(currentSelected)) {
-            dateFilter.value = currentSelected;
+        if (uniqueDates.includes(prevValue)) {
+            dateSelect.value = prevValue;
         }
     }
 
-    // Hàm xử lý chính: Lọc dữ liệu và hiển thị lên giao diện
+    // Hàm xử lý hiển thị dữ liệu & Lọc dữ liệu theo mong muốn
     function renderData() {
-        const selectedDate = document.getElementById('dateFilter').value;
+        const selectedDate = document.getElementById('dateSelect').value;
+        const searchQuery = document.getElementById('searchTeam').value.trim().toLowerCase();
         const tbody = document.getElementById('dataTableBody');
-        const noDataMsg = document.getElementById('noDataMessage');
-        
+        const noDataText = document.getElementById('noDataText');
+
         tbody.innerHTML = '';
 
-        // Bước 1: Lọc dữ liệu theo Ngày được chọn
-        let filteredData = rawDatabase;
+        // 1. Lọc theo ngày
+        let filtered = gsmDatabase;
         if (selectedDate !== 'all') {
-            filteredData = rawDatabase.filter(item => item.ngay === selectedDate);
+            filtered = gsmDatabase.filter(item => item.ngay === selectedDate);
         }
 
-        if (filteredData.length === 0) {
-            noDataMsg.style.display = 'block';
-            document.getElementById('statTotalTeams').innerText = '0';
-            document.getElementById('statGrandTotalSales').innerText = '0 đ';
-            document.getElementById('statTotalTrips').innerText = '0';
+        // 2. Lọc theo ô tìm kiếm tên tổ
+        if (searchQuery !== '') {
+            filtered = filtered.filter(item => item.khuVuc.toLowerCase().includes(searchQuery));
+        }
+
+        if (filtered.length === 0) {
+            noDataText.style.display = 'block';
+            document.getElementById('totalTeams').innerText = '0';
+            document.getElementById('totalTrips').innerText = '0';
+            document.getElementById('totalSales').innerText = '0 đ';
             return;
         }
 
-        noDataMsg.style.display = 'none';
+        noDataText.style.display = 'none';
 
-        // Bước 2: Gom nhóm (Cộng dồn) dữ liệu theo từng Tổ (Khu vực)
-        let groupByTeam = {};
-        let globalTotalSales = 0;
-        let globalTotalTrips = 0;
+        // 3. Gom nhóm dữ liệu tích lũy/cộng dồn theo Tên tổ (Khu vực)
+        let teamGroup = {};
+        let summarySales = 0;
+        let summaryTrips = 0;
 
-        filteredData.forEach(row => {
-            const team = row.khuVuc;
-            if (!groupByTeam[team]) {
-                groupByTeam[team] = {
-                    doanhSo: 0,
-                    cuocXe: 0,
-                    danhSachTaiXe: new Set()
+        filtered.forEach(record => {
+            const team = record.khuVuc;
+            if (!teamGroup[team]) {
+                teamGroup[team] = {
+                    sales: 0,
+                    trips: 0,
+                    drivers: new Set()
                 };
             }
-            groupByTeam[team].doanhSo += row.doanhSo;
-            groupByTeam[team].cuocXe += row.cuocXe;
-            if (row.taiXe) groupByTeam[team].danhSachTaiXe.add(row.taiXe);
+            teamGroup[team].sales += record.doanhSo;
+            teamGroup[team].trips += record.cuocXe;
+            if (record.taiXe) teamGroup[team].drivers.add(record.taiXe);
 
-            globalTotalSales += row.doanhSo;
-            globalTotalTrips += row.cuocXe;
+            summarySales += record.doanhSo;
+            summaryTrips += record.cuocXe;
         });
 
-        // Bước 3: Vẽ dữ liệu gom nhóm lên bảng
-        const sortedTeams = Object.keys(groupByTeam).sort();
-        let stt = 1;
+        // 4. In dữ liệu ra bảng bảng biểu
+        const sortedTeams = Object.keys(teamGroup).sort();
+        let idx = 1;
 
-        sortedTeams.forEach(teamName => {
-            const dataRow = groupByTeam[teamName];
-            const tr = document.createElement('tr');
-            
-            tr.innerHTML = `
-                <td class="text-center">${stt++}</td>
-                <td style="font-weight: 600; color: #2b3a4a;">${teamName}</td>
-                <td class="text-center">${dataRow.danhSachTaiXe.size} tài xế</td>
-                <td class="text-right">${dataRow.cuocXe.toLocaleString('vi-VN')}</td>
-                <td class="text-right" style="color: var(--success-color); font-weight: 700;">${formatVND(dataRow.doanhSo)}</td>
+        sortedTeams.forEach(name => {
+            const data = teamGroup[name];
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="text-center" style="color: #a0aec0;">${idx++}</td>
+                <td style="font-weight: 600;">${name}</td>
+                <td class="text-center">${data.drivers.size} xế</td>
+                <td class="text-right">${data.trips.toLocaleString('vi-VN')}</td>
+                <td class="text-right" style="color: var(--gsm-dark); font-weight: 700;">${formatMoney(data.sales)}</td>
             `;
-            tbody.appendChild(tr);
+            tbody.appendChild(row);
         });
 
-        // Bước 4: Cập nhật các con số trên thẻ tổng quan (Dashboard)
-        document.getElementById('statTotalTeams').innerText = sortedTeams.length;
-        document.getElementById('statGrandTotalSales').innerText = formatVND(globalTotalSales);
-        document.getElementById('statTotalTrips').innerText = globalTotalTrips.toLocaleString('vi-VN');
+        // 5. Đồng bộ hiển thị lên thẻ chỉ số thông minh
+        document.getElementById('totalTeams').innerText = sortedTeams.length;
+        document.getElementById('totalTrips').innerText = summaryTrips.toLocaleString('vi-VN');
+        document.getElementById('totalSales').innerText = formatMoney(summarySales);
     }
 
-    // Xử lý đọc file Excel khi người dùng tải file lên
+    // Đọc file Excel tải lên
     document.getElementById('excelFile').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -355,11 +385,9 @@
                 const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
                 if (jsonData.length === 0) {
-                    alert("Cảnh báo: File Excel trống không có dữ liệu!");
+                    alert("File Excel trống dữ liệu!");
                     return;
                 }
-
-                let newRecordsCount = 0;
 
                 jsonData.forEach(row => {
                     let khuVuc = "CHƯA PHÂN TỔ";
@@ -368,70 +396,61 @@
                     let soCuoc = 0;
                     let maTaiXe = "";
 
-                    // Duyệt tìm cột thông minh dựa trên tên cột thực tế trong file của bạn
+                    // Đọc ánh xạ thông minh dựa trên dữ liệu thật của file đối soát GSM của bạn
                     for (let key in row) {
                         let k = key.toLowerCase().trim();
                         if (k === 'khu vực' || k === 'khuvuc' || k === 'tổ' || k === 'bộ phận') {
                             khuVuc = row[key].toString().trim().toUpperCase() || "CHƯA PHÂN TỔ";
-                        }
-                        else if (k === 'ngày phân công' || k === 'ngayphancong' || k === 'ngày') {
+                        } else if (k === 'ngày phân công' || k === 'ngayphancong' || k === 'ngày') {
                             ngayPhanCong = row[key].toString().trim();
-                        }
-                        else if (k === 'doanh số' || k === 'doanhso' || k === 'tổng giá trị cuốc xe') {
+                        } else if (k === 'doanh số' || k === 'doanhso' || k === 'tổng giá trị cuốc xe') {
                             doanhSo = parseFloat(row[key]) || 0;
-                        }
-                        else if (k === 'số cuốc xe hoàn thành' || k === 'số cuốc hoàn thành' || k === 'số cuốc') {
+                        } else if (k === 'số cuốc xe hoàn thành' || k === 'số cuốc hoàn thành' || k === 'số cuốc') {
                             soCuoc = parseInt(row[key]) || 0;
-                        }
-                        else if (k === 'mã tài xế' || k === 'mataixe' || k === 'mã tx') {
+                        } else if (k === 'mã tài xế' || k === 'mataixe' || k === 'mã tx') {
                             maTaiXe = row[key].toString().trim();
                         }
                     }
 
-                    // Loại bỏ dòng trống hoặc dòng tổng kết lỗi của hệ thống Excel
-                    if (khuVuc !== "") {
-                        rawDatabase.push({
-                            khuVuc: khuVuc,
-                            ngay: ngayPhanCong,
-                            doanhSo: doanhSo,
-                            cuocXe: soCuoc,
-                            taiXe: maTaiXe
-                        });
-                        newRecordsCount++;
-                    }
+                    gsmDatabase.push({
+                        khuVuc: khuVuc,
+                        ngay: ngayPhanCong,
+                        doanhSo: doanhSo,
+                        cuocXe: soCuoc,
+                        taiXe: maTaiXe
+                    });
                 });
 
-                // Lưu cơ sở dữ liệu đã cộng dồn vào localStorage
-                localStorage.setItem('gsm_sales_database', JSON.stringify(rawDatabase));
+                // Lưu cơ sở dữ liệu vào localStorage
+                localStorage.setItem('gsm_master_db', JSON.stringify(gsmDatabase));
                 
-                // Đồng bộ bộ lọc và làm mới bảng dữ liệu
-                updateDateFilterDropdown();
+                populateDateDropdown();
                 renderData();
-                
-                alert(`Đã nạp thành công và cộng dồn thêm ${newRecordsCount} bản ghi lái xe vào hệ thống.`);
-                document.getElementById('excelFile').value = ""; // Reset input file
+                alert("Đã import và cộng dồn dữ liệu mới thành công!");
+                document.getElementById('excelFile').value = "";
 
-            } catch (error) {
-                console.error(error);
-                alert("Lỗi: Không thể đọc cấu trúc file Excel này. Vui lòng đảm bảo định dạng chuẩn.");
+            } catch (err) {
+                console.error(err);
+                alert("Lỗi cấu trúc khi đọc file. Vui lòng thử lại.");
             }
         };
         reader.readAsBinaryString(file);
     });
 
-    // Hàm xóa sạch hệ thống
-    function clearAllData() {
-        if (confirm("Hành động này sẽ xóa toàn bộ lịch sử dữ liệu đã cộng dồn từ trước tới nay. Bạn chắc chắn muốn xóa chứ?")) {
-            rawDatabase = [];
-            localStorage.removeItem('gsm_sales_database');
-            document.getElementById('dateFilter').innerHTML = '<option value="all">-- Tất cả các ngày --</option>';
+    // Hàm xóa sạch dữ liệu hệ thống
+    function clearData() {
+        if (confirm("Hành động này sẽ làm sạch toàn bộ dữ liệu đã tích lũy từ trước đến nay. Bạn có chắc chắn không?")) {
+            gsmDatabase = [];
+            localStorage.removeItem('gsm_master_db');
+            document.getElementById('dateSelect').innerHTML = '<option value="all">-- Tất cả ngày --</option>';
+            document.getElementById('searchTeam').value = '';
             renderData();
         }
     }
 
-    // Khi ứng dụng khởi động hoặc nhấn F5: Tải lại toàn bộ dữ liệu cũ lên màn hình
+    // Kích hoạt khi tải trang ban đầu
     window.onload = function() {
-        updateDateFilterDropdown();
+        populateDateDropdown();
         renderData();
     };
 </script>
