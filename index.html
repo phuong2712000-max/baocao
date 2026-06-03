@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phần Mềm Quản Lý Doanh Thu Taxi</title>
+    <title>Phần Mềm Quản Lý Doanh Thu Taxi - Nhập Excel</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
@@ -12,6 +12,7 @@
             --secondary-color: #18bc9c;
             --danger-color: #e74c3c;
             --warning-color: #f39c12;
+            --info-color: #2980b9;
             --light-bg: #f8f9fa;
             --dark-text: #2c3e50;
             --border-color: #dce4ec;
@@ -72,12 +73,12 @@
             }
             .left-column {
                 display: table-cell;
-                width: 33.33%;
+                width: 35%;
                 vertical-align: top;
             }
             .right-column {
                 display: table-cell;
-                width: 66.67%;
+                width: 65%;
                 vertical-align: top;
             }
         }
@@ -98,6 +99,9 @@
             padding-bottom: 8px;
             border-bottom: 2px solid var(--light-bg);
             color: var(--primary-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         /* Thống kê nhanh */
@@ -122,27 +126,42 @@
         .stat-box h3 { font-size: 13px; text-transform: uppercase; color: #7f8c8d; margin-bottom: 5px; }
         .stat-box p { font-size: 18px; font-weight: bold; color: var(--primary-color); }
 
-        /* Form nhập liệu */
-        .form-group {
+        /* Vùng Nhập file Excel */
+        .import-zone {
+            border: 2px dashed #b2bec3;
+            padding: 25px 15px;
+            text-align: center;
+            border-radius: 8px;
+            background-color: #fafbfc;
+            cursor: pointer;
+            transition: all 0.2s;
             margin-bottom: 15px;
         }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            font-size: 14px;
+        .import-zone:hover {
+            border-color: var(--info-color);
+            background-color: #f0f7fc;
         }
-        .form-control {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+        .import-zone p {
             font-size: 14px;
-            outline: none;
-            transition: border 0.2s;
+            color: #636e72;
+            margin-bottom: 10px;
         }
-        .form-control:focus {
-            border-color: var(--secondary-color);
+        #excel-file {
+            display: none;
+        }
+
+        /* Form hướng dẫn cấu trúc mẫu */
+        .template-guide {
+            background-color: #fdf6e2;
+            border-left: 4px solid #f39c12;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-bottom: 15px;
+        }
+        .template-guide ul {
+            margin-left: 20px;
+            margin-top: 5px;
         }
 
         /* Nút bấm */
@@ -157,14 +176,13 @@
             text-align: center;
             transition: background 0.2s;
         }
-        .btn-primary { background-color: var(--secondary-color); color: white; width: 100%; }
-        .btn-primary:hover { background-color: #149a80; }
+        .btn-info { background-color: var(--info-color); color: white; width: 100%; }
+        .btn-info:hover { background-color: #1f618d; }
         .btn-excel { background-color: #27ae60; color: white; }
         .btn-excel:hover { background-color: #219653; }
-        .btn-cancel { background-color: #95a5a6; color: white; margin-top: 5px; width: 100%; }
-        .btn-action { padding: 4px 8px; font-size: 12px; margin-right: 3px; border-radius: 3px; color: white;}
-        .btn-edit { background-color: var(--warning-color); }
-        .btn-delete { background-color: var(--danger-color); }
+        .btn-danger { background-color: var(--danger-color); color: white; padding: 5px 10px; font-size: 12px; border-radius: 3px; }
+        .btn-danger:hover { background-color: #c0392b; }
+        .btn-action-delete { padding: 4px 8px; font-size: 12px; border-radius: 3px; color: white; background-color: var(--danger-color); }
 
         /* Bộ lọc */
         .filter-row {
@@ -176,27 +194,38 @@
         }
         .filter-item {
             flex: 1;
-            min-width: 150px;
+            min-width: 140px;
         }
         .filter-item label {
+            display: block;
             font-size: 12px;
             font-weight: 600;
             color: #7f8c8d;
+            margin-bottom: 4px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 9px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 13px;
+            outline: none;
         }
 
         /* Bảng dữ liệu */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
+            max-height: 500px;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
-            font-size: 14px;
+            font-size: 13px;
         }
         th, td {
-            padding: 12px 10px;
+            padding: 10px 8px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
@@ -204,6 +233,9 @@
             background-color: var(--light-bg);
             color: var(--primary-color);
             font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         tr:hover { background-color: #fcfcfc; }
 
@@ -221,8 +253,8 @@
 
 <div class="container">
     <header>
-        <h1>HỆ THỐNG QUẢN LÝ & SO SÁNH DOANH THU TAXI</h1>
-        <p>Theo dõi tài xế, phân chia tổ nhóm, bộ lọc nâng cao và báo cáo trực quan</p>
+        <h1>HỆ THỐNG THỐNG KÊ DOANH THU TAXI TỪ FILE EXCEL</h1>
+        <p>Tải file Excel doanh thu lên hệ thống để tự động phân tích, lọc dữ liệu và vẽ biểu đồ so sánh tổ</p>
     </header>
 
     <div class="dashboard-stats">
@@ -239,37 +271,27 @@
     <div class="main-layout">
         <div class="left-column">
             <div class="card">
-                <div class="card-title" id="form-title">Nhập Dữ Liệu Doanh Thu</div>
-                <form id="revenue-form">
-                    <input type="hidden" id="edit-index">
-                    <div class="form-group">
-                        <label>Họ tên tài xế</label>
-                        <input type="text" id="driver-name" class="form-control" placeholder="Ví dụ: Nguyễn Văn A" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Số xe (Biển kiểm soát)</label>
-                        <input type="text" id="car-number" class="form-control" placeholder="Ví dụ: 30A-12345" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Thuộc Tổ</label>
-                        <select id="driver-group" class="form-control" required>
-                            <option value="Tổ 1">Tổ 1</option>
-                            <option value="Tổ 2">Tổ 2</option>
-                            <option value="Tổ 3">Tổ 3</option>
-                            <option value="Tổ 4">Tổ 4</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Doanh thu trong ngày (VND)</label>
-                        <input type="number" id="revenue-amount" class="form-control" placeholder="Ví dụ: 1500000" min="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Ngày thực hiện</label>
-                        <input type="date" id="revenue-date" class="form-control" required>
-                    </div>
-                    <button type="submit" id="btn-submit" class="btn btn-primary">Lưu dữ liệu</button>
-                    <button type="button" id="btn-cancel" class="btn btn-cancel" style="display: none;">Hủy cập nhật</button>
-                </form>
+                <div class="card-title">Nạp Dữ Liệu Excel</div>
+                
+                <div class="template-guide">
+                    <strong>⚠️ Quy định các cột trong File Excel:</strong>
+                    <p>File Excel của bạn phải chứa các cột tiêu đề ở dòng đầu tiên đúng tên như sau:</p>
+                    <ul>
+                        <li><code>Ngày</code> (Định dạng Ngày hoặc dạng chữ YYYY-MM-DD)</li>
+                        <li><code>Tổ</code> (Ví dụ: Tổ 1, Tổ 2, Tổ 3...)</li>
+                        <li><code>Tài xế</code> (Tên tài xế)</li>
+                        <li><code>Số xe</code> (Biển số xe)</li>
+                        <li><code>Doanh thu</code> (Dạng Số tiền)</li>
+                    </ul>
+                </div>
+
+                <div class="import-zone" onclick="document.getElementById('excel-file').click()">
+                    <p>📄 Bấm vào đây để chọn File Excel dữ liệu từ máy tính</p>
+                    <small style="color: #95a5a6;">Hỗ trợ định dạng .xlsx, .xls</small>
+                    <input type="file" id="excel-file" accept=".xlsx, .xls">
+                </div>
+
+                <button id="btn-download-template" class="btn btn-info">Tải File Excel Mẫu Chuẩn</button>
             </div>
 
             <div class="card">
@@ -282,11 +304,14 @@
 
         <div class="right-column">
             <div class="card">
-                <div class="card-title">Bộ Lọc & Tìm Kiếm</div>
+                <div class="card-title">
+                    <span>Bộ Lọc & Tìm Kiếm</span>
+                    <button class="btn btn-danger" id="btn-clear-data" style="display:none;">Xóa toàn bộ dữ liệu</button>
+                </div>
                 <div class="filter-row">
                     <div class="filter-item">
                         <label>Tìm tài xế / Số xe</label>
-                        <input type="text" id="search-keyword" class="form-control" placeholder="Nhập tên hoặc biển số...">
+                        <input type="text" id="search-keyword" class="form-control" placeholder="Nhập tên, biển số...">
                     </div>
                     <div class="filter-item">
                         <label>Lọc theo Tổ</label>
@@ -313,7 +338,7 @@
             </div>
 
             <div class="card">
-                <div class="card-title">Danh Sách Chi Tiết Doanh Thu</div>
+                <div class="card-title">Danh Sách Dữ Liệu Đang Thống Kê</div>
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -323,63 +348,105 @@
                                 <th>Tài xế</th>
                                 <th>Số xe</th>
                                 <th class="text-right">Doanh thu</th>
-                                <th style="text-align: center; width: 120px;">Hành động</th>
+                                <th style="text-align: center; width: 60px;">Xóa</th>
                             </tr>
                         </thead>
                         <tbody id="data-rows"></tbody>
                     </table>
                 </div>
-                <div id="no-data-msg" class="no-data" style="display: none;">Chưa có dữ liệu nào phù hợp với bộ lọc.</div>
+                <div id="no-data-msg" class="no-data">Chưa có dữ liệu. Vui lòng nạp File Excel ở cột bên trái để bắt đầu thống kê.</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    let taxiData = JSON.parse(localStorage.getItem('taxi_revenue_data')) || [];
+    let taxiData = JSON.parse(localStorage.getItem('taxi_excel_imported_data')) || [];
     let myChart = null;
-
-    document.getElementById('revenue-date').value = new Date().toISOString().split('T')[0];
 
     function formatVND(amount) {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     }
 
-    function formatDateVN(dateString) {
-        if (!dateString) return '';
-        const parts = dateString.split('-');
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
+    document.getElementById('excel-file').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    document.getElementById('revenue-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const name = document.getElementById('driver-name').value.trim();
-        const car = document.getElementById('car-number').value.trim().toUpperCase();
-        const group = document.getElementById('driver-group').value;
-        const revenue = parseFloat(document.getElementById('revenue-amount').value);
-        const date = document.getElementById('revenue-date').value;
-        const editIndex = document.getElementById('edit-index').value;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        const entry = { name, car, group, revenue, date };
+                if(jsonData.length === 0) {
+                    alert("File Excel trống hoặc không đúng định dạng!");
+                    return;
+                }
 
-        if (editIndex === "") {
-            taxiData.push(entry);
-        } else {
-            taxiData[parseInt(editIndex)] = entry;
-            resetFormMode();
-        }
+                const newData = [];
+                let errorCount = 0;
 
-        saveAndRender();
-        document.getElementById('driver-name').value = '';
-        document.getElementById('car-number').value = '';
-        document.getElementById('revenue-amount').value = '';
+                jsonData.forEach(row => {
+                    const rawDate = row['Ngày'] || row['ngày'] || row['NGÀY'];
+                    const group = row['Tổ'] || row['tổ'] || row['TỔ'] || 'Chưa phân tổ';
+                    const name = row['Tài xế'] || row['tài xế'] || row['TÀI XẾ'] || row['Tên tài xế'];
+                    const car = row['Số xe'] || row['số xe'] || row['SỐ XE'] || row['Biển số'];
+                    const rawRevenue = row['Doanh thu'] || row['doanh thu'] || row['DOANH THU'];
+
+                    if (name && car && rawRevenue !== undefined) {
+                        let parsedDate = '';
+                        if (rawDate) {
+                            if (typeof rawDate === 'number') {
+                                const utc_days  = Math.floor(rawDate - 25569);
+                                const utc_value = utc_days * 86400;
+                                const date_info = new Date(utc_value * 1000);
+                                parsedDate = date_info.toISOString().split('T')[0];
+                            } else {
+                                if (rawDate.includes('/')) {
+                                    const p = rawDate.split('/');
+                                    if(p[2] && p[1] && p[0]) {
+                                        parsedDate = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+                                    }
+                                } else if (rawDate.includes('-')) {
+                                    parsedDate = rawDate.trim();
+                                }
+                            }
+                        }
+                        
+                        if(!parsedDate) parsedDate = new Date().toISOString().split('T')[0];
+
+                        newData.push({
+                            date: parsedDate,
+                            group: String(group).trim(),
+                            name: String(name).trim(),
+                            car: String(car).trim().toUpperCase(),
+                            revenue: parseFloat(String(rawRevenue).replace(/[^0-9.-]+/g,"")) || 0
+                        });
+                    } else {
+                        errorCount++;
+                    }
+                });
+
+                if (newData.length > 0) {
+                    taxiData = taxiData.concat(newData);
+                    localStorage.setItem('taxi_excel_imported_data', JSON.stringify(taxiData));
+                    renderData();
+                    alert(`Import thành công ${newData.length} dòng dữ liệu doanh thu! ${errorCount > 0 ? '(Bỏ qua ' + errorCount + ' dòng lỗi)' : ''}`);
+                } else {
+                    alert("Không tìm thấy hàng dữ liệu nào hợp lệ. Vui lòng kiểm tra lại tên các cột tiêu đề mẫu!");
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("Đã xảy ra lỗi khi đọc File Excel!");
+            }
+            document.getElementById('excel-file').value = '';
+        };
+        reader.readAsArrayBuffer(file);
     });
-
-    function saveAndRender() {
-        localStorage.setItem('taxi_revenue_data', JSON.stringify(taxiData));
-        renderData();
-    }
 
     function getFilteredData() {
         const keyword = document.getElementById('search-keyword').value.toLowerCase();
@@ -397,15 +464,30 @@
             });
     }
 
+    function formatDateVN(dateString) {
+        if (!dateString) return '';
+        const parts = dateString.split('-');
+        if(parts.length !== 3) return dateString;
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
     function renderData() {
         const filtered = getFilteredData();
         const tbody = document.getElementById('data-rows');
         const noDataMsg = document.getElementById('no-data-msg');
+        const btnClear = document.getElementById('btn-clear-data');
         
         tbody.innerHTML = '';
 
+        if (taxiData.length > 0) {
+            btnClear.style.display = 'inline-block';
+        } else {
+            btnClear.style.display = 'none';
+        }
+
         if (filtered.length === 0) {
             noDataMsg.style.display = 'block';
+            noDataMsg.innerText = taxiData.length === 0 ? "Chưa có dữ liệu. Vui lòng nạp File Excel ở cột bên trái để bắt đầu thống kê." : "Chưa có dữ liệu nào phù hợp với bộ lọc.";
         } else {
             noDataMsg.style.display = 'none';
             filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -419,8 +501,7 @@
                     <td><code style="background:#dee2e6; padding:2px 6px; border-radius:4px; font-weight:bold;">${item.car}</code></td>
                     <td class="text-right" style="font-weight:600; color:#2c3e50;">${formatVND(item.revenue)}</td>
                     <td style="text-align: center;">
-                        <button class="btn btn-action btn-edit" onclick="editEntry(${item.originalIndex})">Sửa</button>
-                        <button class="btn btn-action btn-delete" onclick="deleteEntry(${item.originalIndex})">Xóa</button>
+                        <button class="btn-action-delete" onclick="deleteEntry(${item.originalIndex})">Xóa</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -435,9 +516,10 @@
 
         currentData.forEach(item => {
             grandTotal += item.revenue;
-            if (groupTotals[item.group] !== undefined) {
-                groupTotals[item.group] += item.revenue;
+            if (groupTotals[item.group] === undefined) {
+                groupTotals[item.group] = 0;
             }
+            groupTotals[item.group] += item.revenue;
         });
 
         document.getElementById('grand-total').innerText = formatVND(grandTotal);
@@ -458,8 +540,11 @@
     function updateChart(groupData) {
         const labels = Object.keys(groupData);
         const dataValues = Object.values(groupData);
+        const colors = ['rgba(24, 188, 156, 0.7)', 'rgba(52, 152, 219, 0.7)', 'rgba(155, 89, 182, 0.7)', 'rgba(241, 196, 15, 0.7)', 'rgba(230, 126, 34, 0.7)', 'rgba(149, 165, 166, 0.7)'];
+        const borderColors = ['#18bc9c', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#95a5a6'];
 
         if (myChart) {
+            myChart.data.labels = labels;
             myChart.data.datasets[0].data = dataValues;
             myChart.update();
         } else {
@@ -469,15 +554,10 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Doanh thu (VND)',
+                        label: 'Doanh thu Tổ (VND)',
                         data: dataValues,
-                        backgroundColor: [
-                            'rgba(24, 188, 156, 0.7)',
-                            'rgba(52, 152, 219, 0.7)',
-                            'rgba(155, 89, 182, 0.7)',
-                            'rgba(241, 196, 15, 0.7)'
-                        ],
-                        borderColor: ['#18bc9c', '#3498db', '#9b59b6', '#f1c40f'],
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderColor: borderColors.slice(0, labels.length),
                         borderWidth: 1
                     }]
                 },
@@ -496,75 +576,63 @@
         }
     }
 
-    window.editEntry = function(index) {
-        const item = taxiData[index];
-        document.getElementById('driver-name').value = item.name;
-        document.getElementById('car-number').value = item.car;
-        document.getElementById('driver-group').value = item.group;
-        document.getElementById('revenue-amount').value = item.revenue;
-        document.getElementById('revenue-date').value = item.date;
-        document.getElementById('edit-index').value = index;
-
-        document.getElementById('form-title').innerText = "Chỉnh Sửa Dữ Liệu Doanh Thu";
-        document.getElementById('form-title').style.color = "var(--warning-color)";
-        document.getElementById('btn-submit').innerText = "Cập nhật dữ liệu";
-        document.getElementById('btn-submit').style.backgroundColor = "var(--warning-color)";
-        document.getElementById('btn-cancel').style.display = "block";
-        document.getElementById('revenue-form').scrollIntoView({ behavior: 'smooth' });
-    };
-
-    function resetFormMode() {
-        document.getElementById('edit-index').value = "";
-        document.getElementById('form-title').innerText = "Nhập Dữ Liệu Doanh Thu";
-        document.getElementById('form-title').style.color = "var(--primary-color)";
-        document.getElementById('btn-submit').innerText = "Lưu dữ liệu";
-        document.getElementById('btn-submit').style.backgroundColor = "var(--secondary-color)";
-        document.getElementById('btn-cancel').style.display = "none";
-        document.getElementById('revenue-form').reset();
-        document.getElementById('revenue-date').value = new Date().toISOString().split('T')[0];
+    window.deleteEntry = function(index) {
+        if(confirm("Bạn có muốn xóa dòng doanh thu này ra khỏi hệ thống?")) {
+            taxiData.splice(index, 1);
+            localStorage.setItem('taxi_excel_imported_data', JSON.stringify(taxiData));
+            renderData();
+        }
     }
 
-    document.getElementById('btn-cancel').addEventListener('click', resetFormMode);
-
-    window.deleteEntry = function(index) {
-        if (confirm("Bạn có chắc chắn muốn xóa dữ liệu này?")) {
-            if (document.getElementById('edit-index').value == index) resetFormMode();
-            taxiData.splice(index, 1);
-            saveAndRender();
+    document.getElementById('btn-clear-data').addEventListener('click', function() {
+        if (confirm("CẢNH BÁO: Bạn có muốn xóa TOÀN BỘ dữ liệu đã nạp?")) {
+            taxiData = [];
+            localStorage.removeItem('taxi_excel_imported_data');
+            renderData();
         }
-    };
+    });
 
     document.getElementById('search-keyword').addEventListener('input', renderData);
     document.getElementById('filter-group').addEventListener('change', renderData);
     document.getElementById('filter-from-date').addEventListener('change', renderData);
     document.getElementById('filter-to-date').addEventListener('change', renderData);
 
+    document.getElementById('btn-download-template').addEventListener('click', function() {
+        const templateData = [
+            ["Ngày", "Tổ", "Tài xế", "Số xe", "Doanh thu"],
+            ["2026-06-01", "Tổ 1", "Nguyễn Văn A", "30A-12345", 1500000],
+            ["2026-06-01", "Tổ 2", "Trần Văn B", "29B-67890", 1850000]
+        ];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(templateData);
+        XLSX.utils.book_append_sheet(wb, ws, "Mẫu Nhập Liệu");
+        XLSX.writeFile(wb, "Mau_nhap_doanh_thu_taxi.xlsx");
+    });
+
     document.getElementById('btn-export').addEventListener('click', function() {
         const filtered = getFilteredData();
         if (filtered.length === 0) {
-            alert("Không có dữ liệu để xuất file Excel!");
+            alert("Không có dữ liệu để xuất báo cáo!");
             return;
         }
 
         const excelRows = [
-            ["BÁO CÁO CHI TIẾT DOANH THU TAXI"],
+            ["BÁO CÁO THỐNG KÊ DOANH THU TAXI"],
             [],
-            ["Ngày thực hiện", "Tổ hoạt động", "Họ tên tài xế", "Biển kiểm soát xe", "Doanh thu (VND)"]
+            ["Ngày", "Tổ", "Tài xế", "Số xe", "Doanh thu (VND)"]
         ];
 
-        let totalRevenue = 0;
+        let total = 0;
         filtered.forEach(item => {
             excelRows.push([formatDateVN(item.date), item.group, item.name, item.car, item.revenue]);
-            totalRevenue += item.revenue;
+            total += item.revenue;
         });
-
-        excelRows.push([]);
-        excelRows.push(["", "", "", "TỔNG CỘNG DOANH THU:", totalRevenue]);
+        excelRows.push([], ["", "", "", "TỔNG DOANH THU:", total]);
 
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(excelRows);
-        XLSX.utils.book_append_sheet(wb, ws, "Doanh Thu Taxi");
-        XLSX.writeFile(wb, `Bao_cao_doanh_thu_taxi_${new Date().toISOString().split('T')[0]}.xlsx`);
+        XLSX.utils.book_append_sheet(wb, ws, "Thống Kê");
+        XLSX.writeFile(wb, `Bao_cao_thong_ke_taxi_${new Date().toISOString().split('T')[0]}.xlsx`);
     });
 
     renderData();
