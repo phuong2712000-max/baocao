@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Báo Cáo Doanh Thu Theo Tổ & Ngày</title>
+    <title>Báo Cáo Doanh Thu Theo Tổ & Ngày - Bản Sửa Lỗi Triệt Để</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -21,16 +21,15 @@
             <button class="px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded flex items-center gap-1 font-medium"><i class="fa-regular fa-calendar-days"></i> Khoảng thời gian</button>
             
             <span class="text-gray-400 mx-1">Từ</span>
-            <input type="date" id="startDate" value="2026-05-01" onchange="onDateFilterChange()" class="border p-1 rounded focus:outline-emerald-500">
+            <input type="date" id="startDate" value="2026-05-26" onchange="onDateFilterChange()" class="border p-1 rounded focus:outline-emerald-500">
             <span class="text-gray-400">→ Đến</span>
-            <input type="date" id="endDate" value="2026-05-27" onchange="onDateFilterChange()" class="border p-1 rounded focus:outline-emerald-500">
+            <input type="date" id="endDate" value="2026-05-26" onchange="onDateFilterChange()" class="border p-1 rounded focus:outline-emerald-500">
             
             <button onclick="onDateFilterChange()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded font-medium transition">Xem báo cáo</button>
-            
-            <button onclick="setPresetDate('ky')" class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-50">Cả kỳ 01/05-27/05</button>
+            <button onclick="setPresetDate('ky')" class="px-3 py-1 border rounded text-gray-600 hover:bg-gray-50">Cả kỳ (Tháng 5)</button>
         </div>
         <div class="text-emerald-600 font-medium" id="dateDisplayRange">
-            01/05/2026 → 27/05/2026 <span class="text-gray-400 font-normal">(27 ngày)</span>
+            26/05/2026 → 26/05/2026 <span class="text-gray-400 font-normal">(1 ngày)</span>
         </div>
     </div>
 
@@ -45,16 +44,15 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow-sm border border-gray-100 mb-4 flex justify-between items-center px-4 overflow-x-auto">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 mb-4 flex justify-between items-center px-4">
         <div class="flex gap-6 py-3">
             <button onclick="switchTab(this, 'so-sanh')" class="flex items-center gap-1.5 text-gray-500 pb-1 tab-active"><i class="fa-solid fa-users-viewfinder"></i> So sánh tổ</button>
             <button onclick="switchTab(this, 'tong-quan')" class="flex items-center gap-1.5 text-gray-500 pb-1 hover:text-emerald-500"><i class="fa-solid fa-eye"></i> Tổng quan</button>
-            <button onclick="switchTab(this, 'kpi')" class="flex items-center gap-1.5 text-gray-500 pb-1 hover:text-emerald-500"><i class="fa-solid fa-bullseye"></i> KPI</button>
         </div>
         
         <div class="flex gap-2 items-center py-2">
             <button onclick="resetData()" class="px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 flex items-center gap-1">
-                <i class="fa-solid fa-trash-can"></i> Reset dữ liệu gốc
+                <i class="fa-solid fa-trash-can"></i> Xóa dữ liệu cũ
             </button>
             <label class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded flex items-center gap-2 cursor-pointer transition font-medium shadow-sm">
                 <i class="fa-solid fa-file-excel text-base"></i> Tải File Excel Lên
@@ -68,12 +66,11 @@
             </div>
         <div id="tab-other" class="hidden bg-white p-8 rounded-lg shadow-sm border border-gray-100 text-center text-gray-500">
             <i class="fa-solid fa-folder-open text-4xl text-emerald-400 mb-2"></i>
-            <h3 class="text-lg font-bold text-gray-700 mb-1">Tính năng đang hoạt động ngầm</h3>
+            <h3 class="text-lg font-bold text-gray-700 mb-1">Tính năng đang chạy ngầm</h3>
         </div>
     </div>
 
     <script>
-        // Cấu hình giao diện màu sắc cố định cho 6 Tổ
         const toMeta = {
             "Tổ 01": { color: "border-emerald-700", textColor: "text-emerald-700", bgLight: "bg-emerald-700" },
             "Tổ 02": { color: "border-blue-600", textColor: "text-blue-600", bgLight: "bg-blue-600" },
@@ -85,18 +82,16 @@
 
         let dbData = {};
 
-        // Khởi động ứng dụng
         function initApp() {
-            const saved = localStorage.getItem('excel_daily_report_v2');
+            const saved = localStorage.getItem('excel_daily_report_v3');
             if (saved) {
                 dbData = JSON.parse(saved);
             } else {
-                dbData = {}; // Ban đầu trống để chờ dữ liệu thật của bạn import vào
+                dbData = {};
             }
             onDateFilterChange();
         }
 
-        // Đồng bộ khoảng ngày lọc
         function onDateFilterChange() {
             const startStr = document.getElementById('startDate').value;
             const endStr = document.getElementById('endDate').value;
@@ -111,19 +106,16 @@
             renderDashboard();
         }
 
-        // Tính toán dữ liệu gộp theo khoảng ngày và hiển thị
         function renderDashboard() {
             const startStr = document.getElementById('startDate').value;
             const endStr = document.getElementById('endDate').value;
             const searchQuery = document.getElementById('searchDriver').value.toLowerCase();
 
-            // Tạo khung chứa tổng hợp cho 6 tổ
             let summary = {};
             Object.keys(toMeta).forEach(to => {
-                summary[to] = { total: 0, drivers: {}, driverCount: 0, daysActive: 0 };
+                summary[to] = { total: 0, drivers: {}, daysActive: 0 };
             });
 
-            // Duyệt dữ liệu từ ngày -> ngày
             let start = new Date(startStr);
             let end = new Date(endStr);
 
@@ -135,7 +127,6 @@
                             summary[to].total += dbData[dateStr][to].total;
                             summary[to].daysActive++;
                             
-                            // Gộp doanh thu của từng tài xế
                             Object.keys(dbData[dateStr][to].drivers).forEach(matai => {
                                 const dr = dbData[dateStr][to].drivers[matai];
                                 if (!summary[to].drivers[matai]) {
@@ -148,30 +139,23 @@
                 }
             }
 
-            // Render mã HTML
             const container = document.getElementById('tab-so-sanh');
             container.innerHTML = '';
 
             Object.keys(summary).forEach(to => {
                 const item = summary[to];
                 const meta = toMeta[to];
-                
-                // Đếm tổng số tài xế xuất hiện trong tổ ở kỳ này
                 const totalDriversInTo = Object.keys(item.drivers).length;
 
-                // Chuyển object tài xế sang mảng để sort top doanh thu cao nhất
                 let driverList = Object.keys(item.drivers).map(code => ({
                     code: code,
                     name: item.drivers[code].name,
                     val: item.drivers[code].val
                 }));
 
-                // Lọc theo thanh tìm kiếm kiếm ô tài xế
-                let filtered = driverList.filter(d => d.name.toLowerCase().includes(searchQuery) || d.code.includes(searchQuery));
-                
-                // Sắp xếp giảm dần theo doanh thu
+                let filtered = driverList.filter(d => d.name.toLowerCase().includes(searchQuery) || d.code.toString().includes(searchQuery));
                 filtered.sort((a, b) => b.val - a.val);
-                let topDrivers = filtered.slice(0, 4); // Lấy top 4 người cao nhất
+                let topDrivers = filtered.slice(0, 4);
 
                 let driverRows = '';
                 topDrivers.forEach(dr => {
@@ -186,29 +170,32 @@
                     `;
                 });
 
-                // Tính toán các chỉ số trung bình dựa trên số ngày hoạt động thực tế
-                let activeDays = item.daysActive > 0 ? (item.daysActive / 6) : 1; // Chia 6 vì vòng lặp chạy qua 6 tổ/ngày
-                let avgDayPerDriver = totalDriversInTo > 0 ? ((item.total * 1000) / totalDriversInTo / activeDays) : 0;
+                let activeDays = Math.max(1, item.daysActive / 6);
+                let avgDayPerDriver = totalDriversInTo > 0 ? ((item.total * 1000000) / totalDriversInTo / activeDays) : 0;
+                let avgPeriodPerDriver = totalDriversInTo > 0 ? (item.total / totalDriversInTo) : 0;
+
+                // Quy đổi hiển thị chữ K cho tiền nghìn
+                let avgDayStr = avgDayPerDriver >= 1000 ? (avgDayPerDriver / 1000).toFixed(0) + "K" : avgDayPerDriver.toFixed(0);
 
                 container.innerHTML += `
                     <div class="bg-white rounded-lg shadow-sm border-t-4 ${meta.color} border-x border-b border-gray-200 flex flex-col justify-between">
                         <div class="p-3">
                             <div class="flex justify-between items-center mb-2">
                                 <h3 class="font-bold text-base ${meta.textColor}">${to}</h3>
-                                <span class="text-[11px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">${totalDriversInTo} TX hoạt động</span>
+                                <span class="text-[11px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">${totalDriversInTo} TX có DT</span>
                             </div>
                             <div class="space-y-1 mb-3">
                                 <div class="flex justify-between text-xs text-gray-500">
-                                    <span>Tổng doanh thu kỳ</span>
+                                    <span>Tổng DT kỳ</span>
                                     <span class="font-bold text-gray-800 text-sm">${item.total.toFixed(2)}M</span>
                                 </div>
                                 <div class="flex justify-between text-xs text-gray-500 pt-1 border-t border-dashed">
                                     <span>TB DT/tài xế/ngày</span>
-                                    <span class="font-bold text-gray-800">${avgDayPerDriver.toFixed(0)}K</span>
+                                    <span class="font-bold text-gray-800">${avgDayStr}</span>
                                 </div>
                                 <div class="flex justify-between text-xs text-gray-500">
                                     <span>TB DT/tài xế cả kỳ</span>
-                                    <span class="font-bold text-gray-800">${totalDriversInTo > 0 ? (item.total / totalDriversInTo).toFixed(2) : 0}M</span>
+                                    <span class="font-bold text-gray-800">${avgPeriodPerDriver.toFixed(2)}M</span>
                                 </div>
                             </div>
                             <div class="h-[2px] w-full ${meta.bgLight} opacity-80 mb-2"></div>
@@ -221,7 +208,6 @@
             });
         }
 
-        // HÀM QUAN TRỌNG: ĐỌC VÀ PHÂN TÍCH FILE EXCEL THỰC TẾ CỦA BẠN
         function importExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -231,101 +217,111 @@
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
                 const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                
-                // Chuyển đổi dữ liệu thô từ Excel sang JSON
                 const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                if(jsonData.length === 0) return alert("File Excel của bạn không có dữ liệu!");
 
-                let successCount = 0;
+                if(jsonData.length === 0) return alert("File Excel rỗng!");
+
+                let importedCount = 0;
 
                 jsonData.forEach(row => {
-                    // 1. Phân tích bóc tách Cột Ngày từ cột "Bắt đầu ca" (VD: "26/05/2026 15:00")
-                    let rawTimeStr = row["Bắt đầu ca"];
+                    // 1. Xử lý chuẩn hóa ngày từ cột "Bắt đầu ca" hoặc "Ngày phân công"
+                    let rawTimeStr = row["Bắt đầu ca"] || row["Ngày phân công"];
                     if(!rawTimeStr) return;
                     
                     let dateStr = "";
-                    if(typeof rawTimeStr === 'string') {
-                        let datePart = rawTimeStr.trim().split(" ")[0]; // Lấy phần "26/05/2026"
-                        let parts = datePart.split("/");
-                        if(parts.length === 3) {
-                            dateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`; // Chuyển thành YYYY-MM-DD
+                    let timeStrString = rawTimeStr.toString().trim();
+                    let datePart = timeStrString.split(" ")[0]; // Lấy phần ngày trước khoảng trắng
+                    let parts = datePart.split("/");
+                    
+                    if(parts.length === 3) {
+                        dateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+                    } else {
+                        // Trường hợp định dạng ngày đặc biệt khác
+                        let dashParts = datePart.split("-");
+                        if(dashParts.length === 3) {
+                            dateStr = dashParts[0].length === 4 ? datePart : `${dashParts[2]}-${dashParts[1].padStart(2,'0')}-${dashParts[0].padStart(2,'0')}`;
                         }
                     }
 
                     if(!dateStr || dateStr.includes("undefined")) return;
 
-                    // 2. Phân tích nhận diện Tổ (Ví dụ từ "OCP.DOIXE06.04" -> Nhận diện thành "Tổ 06")
+                    // 2. Nhận diện Tổ chính xác từ mã chuỗi (VD: OCP.DOIXE06.04 -> Tổ 06)
                     let rawTo = row["Tổ"];
                     if(!rawTo) return;
                     
-                    let toMatch = rawTo.match(/DOIXE(\d+)/i); 
                     let toName = "";
+                    let toMatch = rawTo.toString().match(/DOIXE(\d+)/i); 
                     if(toMatch && toMatch[1]) {
-                        toName = "Tổ " + toMatch[1].padStart(2, '0'); // Tạo ra chuỗi "Tổ 06"
+                        toName = "Tổ " + toMatch[1].padStart(2, '0');
+                    } else {
+                        // Dự phòng nếu ghi chữ thường hoặc cách khác
+                        let simpleMatch = rawTo.toString().match(/(\d+)/);
+                        if(simpleMatch) toName = "Tổ " + simpleMatch[1].padStart(2, '0');
                     }
 
-                    if (!toName || !toMeta[toName]) return; // Nếu không thuộc từ Tổ 01 -> Tổ 06 thì bỏ qua
+                    if (!toName || !toMeta[toName]) return;
 
-                    // 3. Lấy mã tài xế, tên tài xế và số doanh thu cước
+                    // 3. Ép kiểu dữ liệu doanh thu loại bỏ mọi lỗi định dạng text chuỗi
+                    let rawRevenue = row["Tổng giá trị cước xe hoàn thành"] || row["Doanh thu"] || row["Tổng giá trị cước xe"];
+                    let doanhThuRaw = parseFloat(rawRevenue.toString().replace(/[^0-9.-]/g, '')) || 0;
+                    let doanhThuTrieu = doanhThuRaw / 1000000;
+
                     let matai = row["Mã tài xế"] || row["Mã tài"];
-                    let tentai = row["Tên tài xế"];
-                    let doanhThuRaw = parseFloat(row["Tổng giá trị cước xe hoàn thành"]) || parseFloat(row["Doanh thu"]) || 0;
-                    let doanhThuTrieu = doanhThuRaw / 1000000; // Đổi số tiền đồng 1.945.000đ thành 1.95M triệu
+                    let tentai = row["Tên tài xế"] || "Tài xế ẩn danh";
 
                     if(!matai) return;
 
-                    // Tiến hành ghi nhận cộng dồn cấu trúc dữ liệu theo Ngày -> Tổ
+                    // 4. Đưa vào cấu trúc dữ liệu tổng gộp
                     if (!dbData[dateStr]) dbData[dateStr] = {};
                     if (!dbData[dateStr][toName]) {
                         dbData[dateStr][toName] = { total: 0, drivers: {} };
                     }
 
-                    // Cộng dồn doanh thu tổng cho Tổ vào ngày đó
                     dbData[dateStr][toName].total += doanhThuTrieu;
 
-                    // Cộng dồn doanh thu riêng của từng tài xế vào ngày đó
                     if (!dbData[dateStr][toName].drivers[matai]) {
                         dbData[dateStr][toName].drivers[matai] = { name: tentai, val: 0 };
                     }
                     dbData[dateStr][toName].drivers[matai].val += doanhThuTrieu;
-                    successCount++;
+                    importedCount++;
                 });
 
-                // Lưu lại vào trình duyệt và tải lại giao diện
-                localStorage.setItem('excel_daily_report_v2', JSON.stringify(dbData));
+                localStorage.setItem('excel_daily_report_v3', JSON.stringify(dbData));
                 
-                // Đặt mặc định bộ lọc ngày nhảy đến đúng ngày của dòng cuối vừa import để xem luôn kết quả
-                if(jsonData.length > 0 && jsonData[0]["Bắt đầu ca"]) {
-                    let firstRowTime = jsonData[0]["Bắt đầu ca"].split(" ")[0].split("/");
-                    if(firstRowTime.length === 3) {
-                        let parsedDate = `${firstRowTime[2]}-${firstRowTime[1].padStart(2,'0')}-${firstRowTime[0].padStart(2,'0')}`;
-                        document.getElementById('startDate').value = parsedDate;
-                        document.getElementById('endDate').value = parsedDate;
+                // Đặt bộ lọc hiển thị tự động nhảy về ngày của dòng dữ liệu đầu tiên tìm thấy
+                if(jsonData.length > 0) {
+                    let sampleTime = jsonData[0]["Bắt đầu ca"] || jsonData[0]["Ngày phân công"];
+                    if(sampleTime) {
+                        let sampleDatePart = sampleTime.toString().trim().split(" ")[0].split("/");
+                        if(sampleDatePart.length === 3) {
+                            let targetDate = `${sampleDatePart[2]}-${sampleDatePart[1].padStart(2,'0')}-${sampleDatePart[0].padStart(2,'0')}`;
+                            document.getElementById('startDate').value = targetDate;
+                            document.getElementById('endDate').value = targetDate;
+                        }
                     }
                 }
 
                 onDateFilterChange();
-                alert(`Import thành công! Đã đọc và cộng dồn dữ liệu của ${successCount} lượt chuyến xe.`);
+                alert(`Import thành công dữ liệu của ${importedCount} dòng từ file Excel!`);
                 event.target.value = '';
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // Các hàm bổ trợ cấu hình nhanh bộ lọc thời gian ngày
         function setPresetDate(type) {
             if(type === 'today') {
                 document.getElementById('startDate').value = "2026-05-26";
                 document.getElementById('endDate').value = "2026-05-26";
             } else if(type === 'ky') {
                 document.getElementById('startDate').value = "2026-05-01";
-                document.getElementById('endDate').value = "2026-05-27";
+                document.getElementById('endDate').value = "2026-05-31";
             }
             onDateFilterChange();
         }
 
         function resetData() {
-            if(confirm("Bạn có chắc chắn muốn xóa hết lịch sử dữ liệu Excel đã import không?")) {
-                localStorage.removeItem('excel_daily_report_v2');
+            if(confirm("Xóa toàn bộ kho dữ liệu đã tích lũy?")) {
+                localStorage.removeItem('excel_daily_report_v3');
                 dbData = {};
                 renderDashboard();
             }
