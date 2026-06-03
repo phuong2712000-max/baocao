@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Báo Cáo Doanh Thu Vận Hành Theo Tổ</title>
+    <title>Hệ Thống Báo Cáo Doanh Thu Vận Hành Toàn Diện</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -53,7 +53,6 @@
             <button class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full font-medium shadow-sm">Tất cả</button>
             <button class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100 flex items-center gap-1"><i class="fa-solid fa-user-tie"></i> NV Công ty</button>
             <button class="px-3 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-100 flex items-center gap-1"><i class="fa-solid fa-car"></i> TX RTO</button>
-            <button class="px-3 py-1 bg-purple-50 text-purple-700 rounded-full border border-purple-100 flex items-center gap-1"><i class="fa-solid fa-bolt"></i> TX Z</button>
         </div>
     </div>
 
@@ -82,18 +81,12 @@
     </div>
 
     <div id="main-content-wrapper">
-        <div id="tab-so-sanh-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-            </div>
+        <div id="tab-so-sanh-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3"></div>
 
-        <div id="tab-other-views" class="hidden bg-white p-10 rounded-xl shadow-sm border border-gray-100 text-center">
-            <i id="dynamic-tab-icon" class="fa-solid fa-chart-line text-5xl text-emerald-400 mb-3 block"></i>
-            <h3 id="dynamic-tab-title" class="text-base font-bold text-gray-700 mb-1">Màn hình dữ liệu tổng hợp</h3>
-            <p class="text-gray-400 text-xs max-w-md mx-auto">Dữ liệu từ tệp Excel bạn tải lên đã được lưu trữ tập trung, tự động phân bố tính toán sang tất cả các khâu tính năng này.</p>
-        </div>
+        <div id="tab-dynamic-container" class="hidden bg-white p-4 rounded-xl shadow-sm border border-gray-100"></div>
     </div>
 
     <script>
-        // Cấu trúc định danh màu sắc cố định của 6 Tổ (Giống hệt ảnh gửi)
         const teamConfigs = {
             "Tổ 01": { color: "border-emerald-600", text: "text-emerald-600", bar: "bg-emerald-600" },
             "Tổ 02": { color: "border-blue-600", text: "text-blue-600", bar: "bg-blue-600" },
@@ -104,20 +97,15 @@
         };
 
         let currentActiveTabId = "so-sanh";
-        let dateMode = "day"; // Mặc định chế độ theo ngày giống ảnh
+        let dateMode = "day"; 
         let globalDatabase = {};
 
         function initApplication() {
-            const cache = localStorage.getItem('fleet_master_db');
-            if (cache) {
-                globalDatabase = JSON.parse(cache);
-            } else {
-                globalDatabase = {}; // Khởi tạo rỗng để nạp Excel
-            }
+            const cache = localStorage.getItem('fleet_master_db_v4');
+            if (cache) globalDatabase = JSON.parse(cache);
             onDateFilterChange();
         }
 
-        // Chuyển đổi qua lại giữa chế độ xem: Theo ngày đơn lẻ hoặc Khoảng thời gian
         function toggleTimeMode(mode) {
             dateMode = mode;
             const btnDay = document.getElementById('btnModeDay');
@@ -128,30 +116,21 @@
             if (mode === 'day') {
                 btnDay.className = "px-3 py-1.5 border border-emerald-500 bg-emerald-50 text-emerald-600 rounded-lg flex items-center gap-1 font-medium transition";
                 btnRange.className = "px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg flex items-center gap-1 hover:bg-gray-50 transition";
-                lblEnd.classList.add('hidden');
-                inputEnd.classList.add('hidden');
+                lblEnd.classList.add('hidden'); inputEnd.classList.add('hidden');
             } else {
                 btnRange.className = "px-3 py-1.5 border border-emerald-500 bg-emerald-50 text-emerald-600 rounded-lg flex items-center gap-1 font-medium transition";
                 btnDay.className = "px-3 py-1.5 border border-gray-200 text-gray-600 rounded-lg flex items-center gap-1 hover:bg-gray-50 transition";
-                lblEnd.classList.remove('hidden');
-                inputEnd.classList.remove('hidden');
+                lblEnd.classList.remove('hidden'); inputEnd.classList.remove('hidden');
             }
             onDateFilterChange();
         }
 
-        // Xử lý khi đổi ngày trên lịch input
         function onDateFilterChange() {
             const startVal = document.getElementById('startDate').value;
-            let endVal = document.getElementById('endDate').value;
+            let endVal = dateMode === 'day' ? startVal : document.getElementById('endDate').value;
 
-            if (dateMode === 'day') {
-                endVal = startVal; // Nếu là chế độ xem ngày đơn, ép ngày kết thúc trùng ngày bắt đầu
-            }
-
-            const d1 = new Date(startVal);
-            const d2 = new Date(endVal);
-            const diffTime = Math.abs(d2 - d1);
-            const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            const d1 = new Date(startVal); const d2 = new Date(endVal);
+            const totalDays = Math.ceil(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
 
             document.getElementById('dateDisplayRange').innerHTML = 
                 `${startVal.split('-').reverse().join('/')} → ${endVal.split('-').reverse().join('/')} <span class="text-gray-400 font-normal">(${totalDays} ngày)</span>`;
@@ -159,12 +138,10 @@
             renderActiveTab();
         }
 
-        // Hàm gộp dữ liệu chạy theo khoảng ngày lọc hiện tại
         function calculatePeriodData() {
             const startVal = document.getElementById('startDate').value;
             let endVal = dateMode === 'day' ? startVal : document.getElementById('endDate').value;
 
-            // Khởi tạo khung chứa 6 tổ trống
             let resultSummary = {};
             Object.keys(teamConfigs).forEach(tName => {
                 resultSummary[tName] = { totalRevenue: 0, totalTrips: 0, driversMap: {}, activeDaysCount: 0 };
@@ -173,25 +150,24 @@
             let curr = new Date(startVal);
             let stop = new Date(endVal);
 
-            // Chạy vòng lặp qua từng ngày trong cơ sở dữ liệu để gom số liệu
             while(curr <= stop) {
                 let dStr = curr.toISOString().split('T')[0];
                 if (globalDatabase[dStr]) {
                     Object.keys(teamConfigs).forEach(tName => {
                         if (globalDatabase[dStr][tName]) {
-                            const currentDayTeamObj = globalDatabase[dStr][tName];
-                            resultSummary[tName].totalRevenue += currentDayTeamObj.revenue;
-                            resultSummary[tName].totalTrips += currentDayTeamObj.trips;
+                            const dayTeam = globalDatabase[dStr][tName];
+                            resultSummary[tName].totalRevenue += dayTeam.revenue;
+                            resultSummary[tName].totalTrips += dayTeam.trips;
                             resultSummary[tName].activeDaysCount++;
 
-                            // Gộp tài xế xuất sắc
-                            Object.keys(currentDayTeamObj.drivers).forEach(matai => {
-                                const driverData = currentDayTeamObj.drivers[matai];
+                            Object.keys(dayTeam.drivers).forEach(matai => {
+                                const dr = dayTeam.drivers[matai];
                                 if (!resultSummary[tName].driversMap[matai]) {
-                                    resultSummary[tName].driversMap[matai] = { name: driverData.name, rev: 0, trips: 0 };
+                                    resultSummary[tName].driversMap[matai] = { name: dr.name, rev: 0, trips: 0, models: {} };
                                 }
-                                resultSummary[tName].driversMap[matai].rev += driverData.rev;
-                                resultSummary[tName].driversMap[matai].trips += driverData.trips;
+                                resultSummary[tName].driversMap[matai].rev += dr.rev;
+                                resultSummary[tName].driversMap[matai].trips += dr.trips;
+                                if(dr.model) resultSummary[tName].driversMap[matai].models[dr.model] = (resultSummary[tName].driversMap[matai].models[dr.model] || 0) + 1;
                             });
                         }
                     });
@@ -201,31 +177,206 @@
             return resultSummary;
         }
 
-        // Hàm render Tab: So Sánh Tổ (Hiển thị 6 thẻ)
-        function renderSoSanhToView(aggregatedData) {
+        function renderActiveTab() {
+            const calculatedData = calculatePeriodData();
+            const searchKeyword = document.getElementById('searchDriver').value.toLowerCase().trim();
+            const container = document.getElementById('tab-dynamic-container');
+
+            if (currentActiveTabId === 'so-sanh') {
+                document.getElementById('tab-so-sanh-grid').classList.remove('hidden');
+                container.classList.add('hidden');
+                renderSoSanhToView(calculatedData, searchKeyword);
+                return;
+            }
+
+            document.getElementById('tab-so-sanh-grid').classList.add('hidden');
+            container.classList.remove('hidden');
+
+            // Tính tổng tất cả các tổ để dùng chung cho các tab phân tích
+            let gTotalRev = 0, gTotalTrips = 0, allDrivers = [];
+            Object.keys(calculatedData).forEach(tName => {
+                gTotalRev += calculatedData[tName].totalRevenue;
+                gTotalTrips += calculatedData[tName].totalTrips;
+                Object.keys(calculatedData[tName].driversMap).forEach(code => {
+                    allDrivers.push({
+                        code: code,
+                        to: tName,
+                        ...calculatedData[tName].driversMap[code]
+                    });
+                });
+            });
+
+            if(searchKeyword) {
+                allDrivers = allDrivers.filter(d => d.name.toLowerCase().includes(searchKeyword) || d.code.toString().includes(searchKeyword));
+            }
+
+            // XỬ LÝ LOGIC CHI TIẾT TỪNG TAB
+            if (currentActiveTabId === 'tong-hop') {
+                let rows = '';
+                Object.keys(calculatedData).forEach(tName => {
+                    const item = calculatedData[tName];
+                    rows += `<tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="p-2.5 font-semibold text-gray-800">${tName}</td>
+                        <td class="p-2.5 text-right font-bold text-emerald-600">${item.totalRevenue.toFixed(2)}M</td>
+                        <td class="p-2.5 text-right">${item.totalTrips}</td>
+                        <td class="p-2.5 text-right font-medium">${Object.keys(item.driversMap).length} tài xế</td>
+                        <td class="p-2.5 text-right text-gray-500">${item.totalTrips > 0 ? ((item.totalRevenue * 1000000)/item.totalTrips).toFixed(0) : 0}đ</td>
+                    </tr>`;
+                });
+                container.innerHTML = `
+                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-table mr-2 text-emerald-500"></i>Bảng Tổng Hợp Doanh Thu Toàn Kỳ</h3>
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-500 border-b border-gray-200">
+                                <th class="p-2">Tên Đội/Tổ</th><th class="p-2 text-right">Tổng Doanh Thu</th><th class="p-2 text-right">Số Cuốc Chuyến</th><th class="p-2 text-right">Số Nhân Sự Chạy</th><th class="p-2 text-right">Hiệu Suất/Cuốc</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows || '<tr><td colspan="5" class="text-center p-4 text-gray-400">Chưa có dữ liệu</td></tr>'}</tbody>
+                    </table>`;
+            } 
+            else if (currentActiveTabId === 'tong-quan') {
+                container.innerHTML = `
+                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-4"><i class="fa-solid fa-chart-line mr-2 text-emerald-500"></i>Chỉ Số Vận Hành Trọng Yếu (KPI Tổng Chi Nhánh)</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-xl">
+                            <span class="text-gray-500 block font-medium">Doanh Số Tổng Cộng</span>
+                            <span class="text-2xl font-black text-emerald-700">${gTotalRev.toFixed(2)}M</span>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl">
+                            <span class="text-gray-500 block font-medium">Tổng Số Cuốc Hoàn Thành</span>
+                            <span class="text-2xl font-black text-blue-700">${gTotalTrips} cuốc</span>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-100 p-4 rounded-xl">
+                            <span class="text-gray-500 block font-medium">Tổng Nhân Sự Hoạt Động</span>
+                            <span class="text-2xl font-black text-purple-700">${allDrivers.length} nhân sự</span>
+                        </div>
+                    </div>`;
+            }
+            else if (currentActiveTabId === 'tai-xe') {
+                let rows = '';
+                allDrivers.sort((a,b) => b.rev - a.rev).forEach((d, idx) => {
+                    rows += `<tr class="border-b border-gray-100 text-xs hover:bg-gray-50">
+                        <td class="p-2 text-gray-400">${idx+1}</td>
+                        <td class="p-2 font-bold">${d.code}</td>
+                        <td class="p-2 font-medium text-gray-800">${d.name}</td>
+                        <td class="p-2 text-gray-500">${d.to}</td>
+                        <td class="p-2 text-right font-semibold text-emerald-600">${d.rev.toFixed(2)}M</td>
+                        <td class="p-2 text-right">${d.trips}</td>
+                    </tr>`;
+                });
+                container.innerHTML = `
+                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-user-group mr-2 text-emerald-500"></i>Danh Sách Tra Cứu Nhân Sự</h3>
+                    <div class="max-h-96 overflow-y-auto custom-scrollbar">
+                        <table class="w-full text-left">
+                            <thead class="sticky top-0 bg-gray-50 text-gray-500">
+                                <tr><th class="p-2">STT</th><th class="p-2">Mã Tài Xế</th><th class="p-2">Họ Tên</th><th class="p-2">Đội Quản Lý</th><th class="p-2 text-right">Doanh Số</th><th class="p-2 text-right">Cuốc Xe</th></tr>
+                            </thead>
+                            <tbody>${rows || '<tr><td colspan="6" class="text-center p-4">Không tìm thấy nhân viên nào</td></tr>'}</tbody>
+                        </table>
+                    </div>`;
+            }
+            else if (currentActiveTabId === 'xu-huong') {
+                let trendHtml = '';
+                Object.keys(globalDatabase).sort().forEach(date => {
+                    let dayTotal = 0;
+                    Object.keys(globalDatabase[date]).forEach(t => dayTotal += globalDatabase[date][t].revenue);
+                    let barWidth = Math.min(100, (dayTotal * 5));
+                    trendHtml += `
+                        <div class="flex items-center gap-3 text-xs">
+                            <span class="w-20 font-medium text-gray-600">${date.split('-').reverse().slice(0,2).join('/')}</span>
+                            <div class="flex-1 bg-gray-100 h-5 rounded-md overflow-hidden relative">
+                                <div class="bg-emerald-500 h-full transition-all" style="width: ${barWidth}%"></div>
+                                <span class="absolute left-2 top-0.5 text-[10px] font-bold text-gray-800">${dayTotal.toFixed(2)}M</span>
+                            </div>
+                        </div>`;
+                });
+                container.innerHTML = `
+                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-chart-column mr-2 text-emerald-500"></i>Biểu Đồ Biến Động Doanh Thu Theo Ngày</h3>
+                    <div class="space-y-2 p-2 bg-gray-50 rounded-xl">${trendHtml || '<p class="text-center p-4 text-gray-400">Hãy import thêm nhiều ngày để thấy đồ thị xu hướng</p>'}</div>`;
+            }
+            else if (currentActiveTabId === 'xep-hang') {
+                let topTeams = Object.keys(calculatedData).map(t => ({name: t, rev: calculatedData[t].totalRevenue}));
+                topTeams.sort((a,b) => b.rev - a.rev);
+                let rankingRows = '';
+                topTeams.forEach((t, i) => {
+                    let medal = i===0 ? '🥇' : (i===1 ? '🥈' : (i===2 ? '🥉' : i+1));
+                    rankingRows += `<div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
+                        <span class="font-bold">${medal} ${t.name}</span>
+                        <span class="font-extrabold text-emerald-600 text-sm">${t.rev.toFixed(2)}M</span>
+                    </div>`;
+                });
+                container.innerHTML = `
+                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-trophy mr-2 text-amber-500"></i>Bảng Xếp Hạng Doanh Thu Các Đội Đua Top</h3>
+                    <div class="space-y-2 max-w-md">${rankingRows || '<p class="text-gray-400">Chưa có bảng xếp hạng</p>'}</div>`;
+            }
+            else if (currentActiveTabId === 'canh-bao') {
+                let alerts = '';
+                allDrivers.forEach(d => {
+                    if(d.rev > 0 && d.rev < 0.3) { // Doanh thu thấp hơn 300K trong kỳ lọc
+                        alerts += `<div class="p-2.5 bg-rose-50 border border-rose-100 text-rose-800 rounded-lg flex justify-between items-center text-xs">
+                            <div><i class="fa-solid fa-triangle-exclamation mr-1"></i> Tài xế <span class="font-bold">${d.name} (${d.code})</span> thuộc <span class="font-medium">${d.to}</span> đạt hiệu suất thấp.</div>
+                            <span class="font-bold bg-rose-200 px-2 py-0.5 rounded">${d.rev.toFixed(2)}M</span>
+                        </div>`;
+                    }
+                });
+                container.innerHTML = `
+                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-bell mr-2 text-rose-500"></i>Cảnh Báo Nhân Sự Dưới Sàn Hiệu Suất (&lt;300K)</h3>
+                    <div class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">${alerts || '<div class="text-emerald-600 font-medium p-4 text-center bg-emerald-50 rounded-lg"><i class="fa-solid fa-circle-check mr-1"></i> Tuyệt vời! Không có tài xế nào bị cảnh báo hiệu suất thấp trong kỳ này.</div>'}</div>`;
+            }
+            else if (currentActiveTabId === 'phuong-tien') {
+                let totalModelTrips = {}, modelRevenue = {};
+                // Đếm dữ liệu phương tiện thô sơ từ file
+                allDrivers.forEach(d => {
+                    modelRevenue["Dòng Xe"] = (modelRevenue["Dòng Xe"] || 0) + d.rev;
+                    totalModelTrips["Dòng Xe"] = (totalModelTrips["Dòng Xe"] || 0) + d.trips;
+                });
+                container.innerHTML = `
+                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-car-side mr-2 text-blue-500"></i>Thống Kê Doanh Thu Theo Nhóm Phương Tiện</h3>
+                    <div class="p-4 bg-gray-50 rounded-xl max-w-sm flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-gray-800 text-sm block">Đội Xe Thuần Điện (VF)</span>
+                            <span class="text-xs text-gray-400">${gTotalTrips} chuyến đi an toàn</span>
+                        </div>
+                        <span class="text-base font-black text-blue-600">${gTotalRev.toFixed(2)}M</span>
+                    </div>`;
+            }
+            else if (currentActiveTabId === 'kpi') {
+                let targetKPI = 2.0; // Định mức thử nghiệm 2.0M mỗi tổ
+                let kpiHtml = '';
+                Object.keys(calculatedData).forEach(tName => {
+                    let rev = calculatedData[tName].totalRevenue;
+                    let pct = Math.min(100, (rev / targetKPI) * 100);
+                    let color = pct >= 100 ? 'bg-emerald-500' : (pct >= 50 ? 'bg-amber-500' : 'bg-red-500');
+                    kpiHtml += `<div class="space-y-1">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span>${tName} (Chỉ tiêu: ${targetKPI}M)</span>
+                            <span class="font-bold">${pct.toFixed(1)}% đạt được</span>
+                        </div>
+                        <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
+                            <div class="${color} h-full transition-all" style="width: ${pct}%"></div>
+                        </div>
+                    </div>`;
+                });
+                container.innerHTML = `
+                    <h3 class="text-sm md:text-base font-bold text-gray-800 mb-3"><i class="fa-solid fa-bullseye mr-2 text-purple-500"></i>Tiến Độ Hoàn Thành Chỉ Tiêu Thử Nghiệm Kế Hoạch</h3>
+                    <div class="space-y-4 bg-gray-50 p-4 rounded-xl">${kpiHtml}</div>`;
+            }
+        }
+
+        function renderSoSanhToView(aggregatedData, searchKeyword) {
             const grid = document.getElementById('tab-so-sanh-grid');
             grid.innerHTML = '';
-            const searchKeyword = document.getElementById('searchDriver').value.toLowerCase().trim();
 
             Object.keys(aggregatedData).forEach(tName => {
-                const item = aggregatedData[tName];
-                const conf = teamConfigs[tName];
+                const item = aggregatedData[tName]; const conf = teamConfigs[tName];
 
-                // Chuyển tập hợp tài xế thành mảng để sắp xếp thứ hạng doanh thu giảm dần
                 let driverArray = Object.keys(item.driversMap).map(id => ({
-                    code: id,
-                    name: item.driversMap[id].name,
-                    rev: item.driversMap[id].rev,
-                    trips: item.driversMap[id].trips
+                    code: id, name: item.driversMap[id].name, rev: item.driversMap[id].rev, trips: item.driversMap[id].trips
                 }));
 
-                // Lọc tìm kiếm theo Tên hoặc Mã tài xế nhập trên input
-                let filteredDrivers = driverArray.filter(d => 
-                    d.name.toLowerCase().includes(searchKeyword) || d.code.toString().includes(searchKeyword)
-                );
-
+                let filteredDrivers = driverArray.filter(d => d.name.toLowerCase().includes(searchKeyword) || d.code.toString().includes(searchKeyword));
                 filteredDrivers.sort((a, b) => b.rev - a.rev);
-                let displayTopDrivers = filteredDrivers.slice(0, 4); // Lấy đúng top 4 tài xế như ảnh mẫu
+                let displayTopDrivers = filteredDrivers.slice(0, 4);
 
                 let driverListHtml = '';
                 displayTopDrivers.forEach(d => {
@@ -239,54 +390,34 @@
                                 <span class="${conf.text} font-bold">${d.rev.toFixed(2)}M</span>
                                 <span class="text-[9px] text-gray-400 block">${d.trips} cuốc</span>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 });
 
-                // Các phép tính trung bình tự động quy đổi đơn vị
                 const countActiveDrivers = driverArray.length;
                 const daysDivisor = Math.max(1, item.activeDaysCount / 6);
-                
                 const avgDayPerDriver = countActiveDrivers > 0 ? ((item.totalRevenue * 1000000) / countActiveDrivers / daysDivisor) : 0;
                 const avgPeriodPerDriver = countActiveDrivers > 0 ? (item.totalRevenue / countActiveDrivers) : 0;
-
                 const avgDayStr = avgDayPerDriver >= 1000 ? (avgDayPerDriver / 1000).toFixed(0) + "K" : avgDayPerDriver.toFixed(0);
 
                 grid.innerHTML += `
-                    <div class="bg-white rounded-xl shadow-sm border-t-4 ${conf.color} border-x border-b border-gray-200 flex flex-col justify-between overflow-hidden p-3 transition transform hover:-translate-y-0.5">
+                    <div class="bg-white rounded-xl shadow-sm border-t-4 ${conf.color} border-x border-b border-gray-200 flex flex-col justify-between p-3 transition transform hover:-translate-y-0.5">
                         <div>
                             <div class="flex justify-between items-center mb-2.5">
                                 <h3 class="font-bold text-sm md:text-base ${conf.text}">${tName}</h3>
-                                <span class="text-[10px] text-gray-500 bg-gray-100 font-medium px-2 py-0.5 rounded-md">${countActiveDrivers} TX có DT</span>
+                                <span class="text-[10px] text-gray-500 bg-gray-100 font-medium px-2 py-0.5 rounded-md">${countActiveDrivers} TX chạy</span>
                             </div>
-                            
                             <div class="space-y-1.5 text-xs text-gray-500 mb-2.5">
-                                <div class="flex justify-between">
-                                    <span>Tổng DT kỳ</span>
-                                    <span class="font-bold text-gray-900 text-sm">${item.totalRevenue.toFixed(2)}M</span>
-                                </div>
-                                <div class="flex justify-between pt-1 border-t border-dashed border-gray-100">
-                                    <span>TB DT/tài xế/ngày</span>
-                                    <span class="font-bold text-gray-800">${avgDayStr}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span>TB DT/tài xế cả kỳ</span>
-                                    <span class="font-bold text-gray-800">${avgPeriodPerDriver.toFixed(2)}M</span>
-                                </div>
+                                <div class="flex justify-between"><span>Tổng DT kỳ</span><span class="font-bold text-gray-900 text-sm">${item.totalRevenue.toFixed(2)}M</span></div>
+                                <div class="flex justify-between pt-1 border-t border-dashed border-gray-100"><span>TB DT/TX/ngày</span><span class="font-bold text-gray-800">${avgDayStr}</span></div>
+                                <div class="flex justify-between"><span>TB DT/TX cả kỳ</span><span class="font-bold text-gray-800">${avgPeriodPerDriver.toFixed(2)}M</span></div>
                             </div>
-
                             <div class="h-[2px] w-full ${conf.bar} opacity-60 mb-2.5"></div>
-                            
-                            <div class="space-y-1">
-                                ${driverListHtml || '<p class="text-gray-400 text-center py-4 text-xs">Không tìm thấy tài xế</p>'}
-                            </div>
+                            <div class="space-y-1">${driverListHtml || '<p class="text-gray-400 text-center py-4 text-xs">Không tìm thấy tài xế</p>'}</div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
         }
 
-        // Đọc cấu trúc File Excel tải lên
         function processExcelUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -296,20 +427,17 @@
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                
-                // Trích xuất mảng JSON từ sheet đầu tiên
                 const rawJsonRows = XLSX.utils.sheet_to_json(worksheet);
-                if (rawJsonRows.length === 0) return alert("File Excel tải lên trống dữ liệu hoặc sai biểu mẫu!");
+
+                if (rawJsonRows.length === 0) return alert("File Excel trống dữ liệu!");
 
                 let parseSuccessCount = 0;
-
                 rawJsonRows.forEach(row => {
-                    // 1. Phân tích bóc tách Cột ngày ("Ngày phân công" hoặc "Bắt đầu ca")
                     let origDate = row["Ngày phân công"] || row["Ngay"] || row["Bắt đầu ca"];
                     if (!origDate) return;
 
                     let targetDateKey = "";
-                    let dStr = origDate.toString().trim().split(" ")[0]; // Bẻ gãy lấy chuỗi ngày trước dấu cách giờ
+                    let dStr = origDate.toString().trim().split(" ")[0];
                     let parts = dStr.split("/");
                     
                     if (parts.length === 3) {
@@ -323,23 +451,17 @@
 
                     if (!targetDateKey || targetDateKey.includes("undefined")) return;
 
-                    // 2. Phân tích nhận diện mã Đội/Tổ (Ví dụ: "OCP.DOIXE06.02" -> Nhận diện thành "Tổ 02")
-                    let origTo = row["Tổ"] || row["To"];
-                    if (!origTo) return;
-
+                    let origTo = row["Tổ"] || row["To"]; if (!origTo) return;
                     let toKeyName = "";
                     let splitParts = origTo.toString().split(".");
                     if (splitParts.length > 0) {
-                        let lastChunk = splitParts[splitParts.length - 1]; // Lấy phần số sau cùng "02"
+                        let lastChunk = splitParts[splitParts.length - 1];
                         let numMatch = lastChunk.match(/(\d+)/);
-                        if (numMatch) {
-                            toKeyName = "Tổ " + numMatch[1].padStart(2, '0');
-                        }
+                        if (numMatch) toKeyName = "Tổ " + numMatch[1].padStart(2, '0');
                     }
 
-                    if (!toKeyName || !teamConfigs[toKeyName]) return; // Lọc bỏ nếu không thuộc nhóm Tổ 01 - Tổ 06
+                    if (!toKeyName || !teamConfigs[toKeyName]) return;
 
-                    // 3. Quy đổi doanh số (Đổi tiền VNĐ sang đơn vị Triệu - M)
                     let origRevenue = row["Doanh số"] || row["Tổng giá trị cước xe hoàn thành"] || 0;
                     let numRevenue = parseFloat(origRevenue.toString().replace(/[^0-9.-]/g, '')) || 0;
                     let convertedMillion = numRevenue / 1000000;
@@ -350,29 +472,24 @@
 
                     if (!driverCode) return;
 
-                    // 4. Khởi tạo cấu trúc lưu trữ phân phối
                     if (!globalDatabase[targetDateKey]) globalDatabase[targetDateKey] = {};
                     if (!globalDatabase[targetDateKey][toKeyName]) {
                         globalDatabase[targetDateKey][toKeyName] = { revenue: 0, trips: 0, drivers: {} };
                     }
 
-                    // Tích lũy cộng dồn dữ liệu an toàn
                     globalDatabase[targetDateKey][toKeyName].revenue += convertedMillion;
                     globalDatabase[targetDateKey][toKeyName].trips += countTrips;
 
                     if (!globalDatabase[targetDateKey][toKeyName].drivers[driverCode]) {
-                        globalDatabase[targetDateKey][toKeyName].drivers[driverCode] = { name: driverName, rev: 0, trips: 0 };
+                        globalDatabase[targetDateKey][toKeyName].drivers[driverCode] = { name: driverName, rev: 0, trips: 0, model: row["Model"] };
                     }
                     globalDatabase[targetDateKey][toKeyName].drivers[driverCode].rev += convertedMillion;
                     globalDatabase[targetDateKey][toKeyName].drivers[driverCode].trips += countTrips;
-                    
                     parseSuccessCount++;
                 });
 
-                // Ghi vào LocalStorage của trình duyệt
-                localStorage.setItem('fleet_master_db', JSON.stringify(globalDatabase));
+                localStorage.setItem('fleet_master_db_v4', JSON.stringify(globalDatabase));
                 
-                // Đồng bộ chuyển ô chọn ngày về đúng ngày vừa mới nạp dữ liệu ở dòng đầu tiên để hiển thị kết quả luôn
                 if (rawJsonRows.length > 0) {
                     let firstRowDate = rawJsonRows[0]["Ngày phân công"] || rawJsonRows[0]["Bắt đầu ca"];
                     if (firstRowDate) {
@@ -384,51 +501,20 @@
                         }
                     }
                 }
-
                 onDateFilterChange();
-                alert(`Hệ thống gộp thành công! Đã tích lũy cộng dồn thêm ${parseSuccessCount} dòng dữ liệu từ Excel.`);
+                alert(`Import thành công! Đã xử lý và lưu trữ dữ liệu của ${parseSuccessCount} chuyến xe vào hệ thống.`);
                 event.target.value = '';
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // Định hướng hiển thị cho Tab hiện tại đang chọn
-        function renderActiveTab() {
-            const calculatedData = calculatePeriodData();
-
-            if (currentActiveTabId === 'so-sanh') {
-                document.getElementById('tab-so-sanh-grid').classList.remove('hidden');
-                document.getElementById('tab-other-views').classList.add('hidden');
-                renderSoSanhToView(calculatedData);
-            } else {
-                // Hiển thị giao diện dữ liệu thông minh cho tất cả các tab còn lại để truy cập tính năng toàn diện
-                document.getElementById('tab-so-sanh-grid').classList.add('hidden');
-                document.getElementById('tab-other-views').classList.remove('hidden');
-            }
-        }
-
-        // Hàm click chuyển tab linh hoạt ứng biến theo thanh menu 9 nút
         function switchTab(buttonElement, tabId) {
             currentActiveTabId = tabId;
-            document.querySelectorAll('.tab-active').forEach(el => {
-                el.classList.remove('tab-active');
-                el.classList.add('text-gray-500');
-            });
-            buttonElement.classList.add('tab-active');
-            buttonElement.classList.remove('text-gray-500');
-
-            // Đổi tiêu đề và icon động tương ứng với 9 tính năng của ảnh mẫu
-            const titleEl = document.getElementById('dynamic-tab-title');
-            const iconEl = document.getElementById('dynamic-tab-icon');
-            const menuText = buttonElement.innerText.trim();
-
-            titleEl.innerText = `Phân tích nâng cao – ${menuText}`;
-            iconEl.className = buttonElement.querySelector('i').className + " text-5xl text-emerald-400 mb-3 block";
-
+            document.querySelectorAll('.tab-active').forEach(el => { el.classList.remove('tab-active'); el.classList.add('text-gray-500'); });
+            buttonElement.classList.add('tab-active'); buttonElement.classList.remove('text-gray-500');
             renderActiveTab();
         }
 
-        // Nút cài đặt nhanh thời gian xem báo cáo
         function setFastDate(type) {
             if (type === '02') {
                 document.getElementById('startDate').value = "2026-06-02";
@@ -441,10 +527,8 @@
         }
 
         function clearSystemData() {
-            if (confirm("Hành động này sẽ xóa toàn bộ dữ liệu Excel tích lũy lưu trong trình duyệt. Bạn có chắc muốn reset không?")) {
-                localStorage.removeItem('fleet_master_db');
-                globalDatabase = {};
-                renderActiveTab();
+            if (confirm("Xóa toàn bộ kho dữ liệu đã tích lũy?")) {
+                localStorage.removeItem('fleet_master_db_v4'); globalDatabase = {}; renderActiveTab();
             }
         }
 
